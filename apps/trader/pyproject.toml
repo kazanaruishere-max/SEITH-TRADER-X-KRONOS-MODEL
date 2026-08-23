@@ -2,14 +2,17 @@
 name = "seith-trader"
 version = "0.1.0"
 description = "SEITH trader node: nautilus_trader execution engine"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     "seith-core",
+    "seith-data",
     "nautilus_trader==1.231.0",
+    "ccxt>=4.4",
 ]
 
 [tool.uv.sources]
 seith-core = { path = "../../packages/seith-core", editable = true }
+seith-data = { path = "../../packages/seith-data", editable = true }
 
 [dependency-groups]
 dev = ["pytest>=8.3"]

@@ -91,7 +91,9 @@ def set_halt(active: bool, settings: AppSettings | None = None) -> None:
 
 
 def is_halted(settings: AppSettings | None = None) -> bool:
-    return _halt_active(settings or get_settings())
+    s = settings or get_settings()
+    init_risk_tables(s)
+    return _halt_active(s)
 
 
 def compute_order_quantity(
