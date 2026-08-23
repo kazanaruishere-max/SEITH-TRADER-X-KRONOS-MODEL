@@ -1,0 +1,52 @@
+:root {
+  --bg: #0b0e14;
+  --card: #121722;
+  --border: #1e2635;
+  --text: #e6e9ef;
+  --muted: #8a94a8;
+  --green: #34d399;
+  --red: #f87171;
+  --accent: #60a5fa;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  min-height: 100vh;
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+
+h1 { font-size: 1.5rem; letter-spacing: -0.02em; }
+h1 span { color: var(--accent); }
+.subtitle { color: var(--muted); font-size: 0.85rem; margin-top: 4px; }
+
+.grid { display: grid; gap: 16px; margin-top: 24px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.card h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 12px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { text-align: left; color: var(--muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+td { padding: 8px; border-bottom: 1px solid var(--border); }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.badge.buy { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+.badge.sell { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+.badge.hold { background: rgba(138, 148, 168, 0.15); color: var(--muted); }
+
+.empty { color: var(--muted); font-size: 0.85rem; }
+
+.link { color: var(--accent); text-decoration: none; font-size: 0.8rem; }
+.link:hover { text-decoration: underline; }
+
+.footer { margin-top: 32px; color: var(--muted); font-size: 0.75rem; text-align: center; }
