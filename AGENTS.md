@@ -131,3 +131,14 @@ ditriage oleh lead; temuan valid difix, tolakan didokumentasikan alasannya.
 - `docs/PRD.md` - requirement produk (FR/NFR per modul, milestone, metrik)
 - `docs/adr/0001` - keputusan arsitektur inti (uv multi-env, vendoring, stack)
 - `docs/adr/0002` - kontrak wire, vendor pinning, auth antar-service, logging secret
+- `docs/kronos-notes.md` - distilasi whitepaper Kronos + roadmap benchmark
+- `Kronos Model AI Whitepaper.pdf` - paper asli (AAAI 2026, 36 hal.)
+
+## 10. Skill Proyek (auto-discovery via .opencode/opencode.json)
+
+| Skill | Kapan dimuat |
+|---|---|
+| `seith-dev` | workflow harian: command, gate, troubleshooting env |
+| `seith-trading-safety` | WAJIB saat sentuh money-path/order/approval/risk |
+| `seith-phase-gate` | penutupan fase + review gate dua sub-agent |
+| `seith-kronos` | WAJIB saat sentuh model Kronos/forecast/sampling/benchmark |
