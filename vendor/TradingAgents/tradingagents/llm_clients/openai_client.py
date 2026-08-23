@@ -1,16 +1,36 @@
+import logging
 import os
 import re
+import time
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
 from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
+from openai import APIConnectionError, APIStatusError, RateLimitError
 
 from .api_key_env import get_api_key_env
 from .base_client import BaseLLMClient, normalize_content
 from .capabilities import get_capabilities
 from .validators import validate_model
+
+logger = logging.getLogger(__name__)
+
+# SEITH fork: free/shared upstream pools (openrouter :free, groq free) sering
+# mengembalikan 429/5xx/timeout transien. Retry terbatas dengan backoff di sini
+# agar satu blip tidak membunuh seluruh pipeline multi-agent.
+_TRANSIENT_STATUSES = {429, 500, 502, 503, 504}
+_RETRY_ATTEMPTS = 4
+_RETRY_BASE_SECONDS = 5.0
+
+
+def _is_transient(exc: Exception) -> bool:
+    if isinstance(exc, (RateLimitError, APIConnectionError)):
+        return True
+    if isinstance(exc, APIStatusError):
+        return getattr(exc, "status_code", 0) in _TRANSIENT_STATUSES
+    return False
 
 
 class NormalizedChatOpenAI(ChatOpenAI):
@@ -33,7 +53,24 @@ class NormalizedChatOpenAI(ChatOpenAI):
     """
 
     def invoke(self, input, config=None, **kwargs):
-        return normalize_content(super().invoke(input, config, **kwargs))
+        last_exc: Exception | None = None
+        for attempt in range(1, _RETRY_ATTEMPTS + 1):
+            try:
+                return normalize_content(super().invoke(input, config, **kwargs))
+            except Exception as exc:  # noqa: BLE001 - dinilai ulang oleh _is_transient
+                if not _is_transient(exc) or attempt == _RETRY_ATTEMPTS:
+                    raise
+                last_exc = exc
+                wait = _RETRY_BASE_SECONDS * (2 ** (attempt - 1))
+                logger.warning(
+                    "LLM transient error (%s), retry %d/%d dalam %.0fs",
+                    type(exc).__name__,
+                    attempt,
+                    _RETRY_ATTEMPTS,
+                    wait,
+                )
+                time.sleep(wait)
+        raise last_exc  # pragma: no cover - unreachable
 
     def with_structured_output(self, schema, *, method=None, **kwargs):
         caps = get_capabilities(self.model_name)

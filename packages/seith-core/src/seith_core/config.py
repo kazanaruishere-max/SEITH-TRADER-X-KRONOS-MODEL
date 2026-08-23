@@ -37,7 +37,14 @@ class _FrozenModel(BaseModel):
 
 
 class LLMSettings(_FrozenModel):
+    """Provider LLM pluggable: 'groq' | 'openrouter' (lihat run_analysis._ensure_llm_env).
+
+    Model names harus valid di katalog provider masing-masing pada saat runtime;
+    katalog berubah cepat - verifikasi via API sebelum mengganti.
+    """
+
     api_key: SecretStr | None = None
+    provider: str = "groq"
     quick_model: str = "openai/gpt-oss-20b"
     deep_model: str = "openai/gpt-oss-120b"
     max_retries: int = 3
