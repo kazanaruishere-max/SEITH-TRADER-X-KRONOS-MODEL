@@ -1,0 +1,33 @@
+[project]
+name = "seith-data"
+version = "0.1.0"
+description = "SEITH market data layer: ingestion, Parquet storage, quality checks"
+requires-python = ">=3.12"
+dependencies = [
+    "seith-core",
+    "ccxt>=4.4",
+    "pandas>=2.2",
+    "pyarrow>=17",
+    "requests>=2.32",
+    "yfinance>=0.2.50",
+]
+
+[tool.uv.sources]
+seith-core = { path = "../../packages/seith-core", editable = true }
+
+[dependency-groups]
+dev = ["pytest>=8.3"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/seith_data"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

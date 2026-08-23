@@ -5,16 +5,30 @@ description = "SEITH analysis service: TradingAgents (Groq) + Kronos inference +
 requires-python = ">=3.12"
 dependencies = [
     "seith-core",
+    "seith-data",
     "pandas>=2.2",
     "pyarrow>=17",
     "requests>=2.32",
     "vectorbt==1.1.0",
     "tradingagents",
+    "torch>=2.4",
+    "transformers>=4.46",
+    "einops>=0.8",
+    "huggingface-hub>=0.33",
+    "safetensors>=0.5",
+    "tqdm>=4.66",
 ]
 
 [tool.uv.sources]
 seith-core = { path = "../../packages/seith-core", editable = true }
+seith-data = { path = "../../packages/seith-data", editable = true }
 tradingagents = { path = "../../vendor/TradingAgents", editable = true }
+torch = [{ index = "pytorch-cu124" }]
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
 
 [build-system]
 requires = ["hatchling"]
