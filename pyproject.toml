@@ -1,0 +1,12 @@
+[project]
+name = "seith-meta"
+version = "0.1.0"
+description = "SEITH - Personal AI Hedge Fund Platform (repo marker; bukan package Python)"
+requires-python = ">=3.12"
+
+# CATATAN ARSITEKTUR: Tidak ada [tool.uv.workspace] di sini dengan sengaja.
+# uv modern membuat SEMUA workspace member berbagi satu .venv di root,
+# yang melanggar kebutuhan isolasi dependency antar-service SEITH
+# (torch/Kronos vs nautilus_trader vs LangGraph stack).
+# Setiap app/packages adalah proyek uv independen dengan .venv sendiri;
+# ketergantungan antar-package via editable path dependency.

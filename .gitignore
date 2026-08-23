@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+*.egg
+
+# Secrets & environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+*token*.json
+
+# Data & artifacts
+data/
+*.parquet
+*.db
+*.sqlite
+research/**/*.pkl
+
+# Node (dashboard)
+node_modules/
+.next/
+out/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test & tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
