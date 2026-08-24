@@ -44,3 +44,6 @@ logs/
 .mypy_cache/
 .coverage
 htmlcov/
+
+# Handoff docs
+.handoff/
