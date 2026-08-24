@@ -47,3 +47,6 @@ htmlcov/
 
 # Handoff docs
 .handoff/
+
+# Run artifacts
+*_out.txt
