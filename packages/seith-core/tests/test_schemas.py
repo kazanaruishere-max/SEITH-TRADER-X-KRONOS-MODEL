@@ -16,7 +16,11 @@ from seith_core.schemas import (
     AgentReport,
     AssetClass,
     Decision,
+    EconomicEvent,
+    EventImportance,
     ForecastResult,
+    NewsItem,
+    NewsSentiment,
     OrderProposal,
     OrderProposalStatus,
     PositionSnapshot,
@@ -255,6 +259,136 @@ class TestPositionSnapshot:
         assert self.make(ticker="eth-usdt").ticker == "ETH-USDT"
 
 
+class TestEconomicEvent:
+    def make(self, **overrides) -> EconomicEvent:
+        defaults = dict(
+            source_ref="finnhub:nonfarm_payrolls:2026-09-04T12:30:00+00:00",
+            source="finnhub",
+            ticker="EUR_USD",
+            asset_class=AssetClass.FOREX,
+            event_type="non_farm_payrolls",
+            importance=EventImportance.HIGH,
+            currency="usd",
+            scheduled_at=datetime(2026, 9, 4, 12, 30, 0, tzinfo=UTC),
+            actual=None,
+            forecast=185000.0,
+            previous=216000.0,
+        )
+        defaults.update(overrides)
+        return EconomicEvent(**defaults)
+
+    def test_json_round_trip_preserves_fields(self):
+        event = self.make()
+        restored = EconomicEvent.model_validate_json(event.model_dump_json())
+        assert restored == event
+
+    def test_round_trip_with_actual_filled(self):
+        event = self.make(actual=175000.0)
+        restored = EconomicEvent.model_validate_json(event.model_dump_json())
+        assert restored == event
+        assert restored.surprise_factor == pytest.approx((175000 - 185000) / 185000)
+
+    def test_surprise_factor_none_until_actual_present(self):
+        assert self.make().surprise_factor is None
+        assert self.make(forecast=0.0, actual=1.0).surprise_factor is None
+
+    def test_computed_field_in_serialization(self):
+        payload = self.make().model_dump_json()
+        assert "surprise_factor" in payload
+
+    def test_currency_normalized_to_upper(self):
+        assert self.make().currency == "USD"
+
+    def test_currency_rejects_non_iso(self):
+        with pytest.raises(ValidationError):
+            self.make(currency="USDD")
+        with pytest.raises(ValidationError):
+            self.make(currency="U$D")
+
+    def test_event_type_lowercased(self):
+        event = self.make(event_type="NonFarm_Payrolls")
+        assert event.event_type == "nonfarm_payrolls"
+
+    def test_empty_source_ref_rejected(self):
+        with pytest.raises(ValidationError):
+            self.make(source_ref="   ")
+
+    def test_unknown_importance_rejected(self):
+        with pytest.raises(ValidationError):
+            self.make(importance="extreme")
+
+    def test_naive_scheduled_at_rejected(self):
+        with pytest.raises(ValidationError):
+            self.make(scheduled_at=NAIVE_TS)
+
+    def test_non_utc_offset_canonicalized_to_utc(self):
+        # scheduled_at dipakai sebagai kunci pembanding leksikografis di SQLite;
+        # offset non-UTC wajib dinormalisasi saat validasi, bukan dipreserve
+        event = self.make(scheduled_at="2026-09-04T14:30:00+02:00")
+        assert event.scheduled_at.utcoffset().total_seconds() == 0
+        assert event.scheduled_at.hour == 12
+
+    def test_nan_actual_rejected(self):
+        with pytest.raises(ValidationError):
+            self.make(actual=float("nan"))
+        with pytest.raises(ValidationError):
+            self.make(forecast=float("inf"))
+
+
+class TestNewsItem:
+    def make(self, **overrides) -> NewsItem:
+        defaults = dict(
+            external_id="1234567",
+            currencies=("btc", "eth"),
+            title="Bitcoin ETF inflows hit record",
+            url="https://cryptopanic.com/news/1234567",
+            published_at=datetime(2026, 8, 23, 14, 5, 0, tzinfo=UTC),
+            positive_votes=42,
+            negative_votes=7,
+        )
+        defaults.update(overrides)
+        return NewsItem(**defaults)
+
+    def test_json_round_trip(self):
+        item = self.make()
+        restored = NewsItem.model_validate_json(item.model_dump_json())
+        assert restored == item
+
+    def test_sentiment_computed_from_votes(self):
+        assert self.make().sentiment == NewsSentiment.POSITIVE
+        assert self.make(negative_votes=99).sentiment == NewsSentiment.NEGATIVE
+        assert self.make(positive_votes=7).sentiment == NewsSentiment.NEUTRAL
+
+    def test_sentiment_not_required_on_input(self):
+        item = NewsItem.model_validate(
+            {
+                "external_id": "1",
+                "title": "t",
+                "url": "https://x.test/n",
+                "published_at": AWARE_TS.isoformat(),
+                "positive_votes": 0,
+                "negative_votes": 0,
+            }
+        )
+        assert item.sentiment == NewsSentiment.NEUTRAL
+
+    def test_currencies_normalized_to_upper(self):
+        assert self.make().currencies == ("BTC", "ETH")
+
+    def test_non_utc_published_at_canonicalized(self):
+        item = self.make(published_at="2026-08-23T16:05:00+02:00")
+        assert item.published_at.hour == 14
+        assert item.published_at.utcoffset().total_seconds() == 0
+
+    def test_empty_title_rejected(self):
+        with pytest.raises(ValidationError):
+            self.make(title="   ")
+
+    def test_negative_votes_rejected(self):
+        with pytest.raises(ValidationError):
+            self.make(positive_votes=-1)
+
+
 class TestSharedHelpers:
     def test_action_to_side(self):
         assert action_to_side(Action.BUY) == Side.BUY
@@ -268,6 +402,20 @@ class TestSharedHelpers:
         id_a, id_b = new_id("sig"), new_id("sig")
         assert id_a != id_b
         assert len(id_a.split("_", 1)[1]) == 32
+
+    def test_news_event_source_serializes(self):
+        # additive enum member: wire-safe, round-trip harus stabil
+        signal = Signal(
+            ticker="EUR_USD",
+            asset_class=AssetClass.FOREX,
+            action=Action.BUY,
+            confidence=0.6,
+            source=SignalSource.NEWS_EVENT,
+            rationale="NFP surprise",
+        )
+        restored = Signal.model_validate_json(signal.model_dump_json())
+        assert restored == signal
+        assert restored.source.value == "news_event"
 
     def test_timeframe_members_canonical(self):
         assert Timeframe.H1 == "1h"
