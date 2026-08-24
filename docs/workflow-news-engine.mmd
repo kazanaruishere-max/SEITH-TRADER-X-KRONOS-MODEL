@@ -1,0 +1,74 @@
+%% SEITH — Workflow News-Driven Hedge Fund (Visi Utuh E1-E6)
+%% Render: https://mermaid.live atau VS Code Mermaid extension
+flowchart TB
+    %% ============ MATA: INGEST BERITA & DATA ============
+    subgraph SENSE["👁️ MATA · SENSE (E1)"]
+        direction LR
+        CAL["📅 Economic Calendar<br/>Finnhub / ForexFactory<br/>NFP · CPI · FOMC · suku bunga"]
+        CNEWS["📰 Crypto News<br/>CryptoPanic / Finnhub"]
+        MKT["📈 Market Data m1<br/>Binance · OANDA · yfinance"]
+    end
+
+    %% ============ OTAK: POLA & ANALISIS ============
+    subgraph BRAIN["🧠 OTAK · INTELLIGENCE (E2-E3)"]
+        direction TB
+        PLIB["⭐ Pattern Library Builder<br/>(pair x event-type) histori N kejadian:<br/>spike size · arah · retracement %<br/>probabilitas lanjut/balik @1m/5m/15m/1h/4h"]
+        DETECT["🔎 Event Detector Live<br/>rilis terdeteksi + surprise factor<br/>(actual vs forecast)"]
+        SPIKE["📉 Spike Monitor m1<br/>volatility burst detection"]
+        KRONOS["⚡ Kronos Konfirmasi<br/>forecast searah pola?"]
+        SIG["🎯 SIGNAL NEWS_EVENT<br/>pair · arah · probabilitas<br/>conf = pola historis x Kronos agree"]
+        PLIB -.->|edge knowledge| DETECT
+        CAL --> DETECT
+        CNEWS --> DETECT
+        MKT --> SPIKE
+        DETECT --> SPIKE
+        SPIKE --> SIG
+        KRONOS --> SIG
+        SIG -->|"log + stats.json"| DB[(SQLite decisions)]
+    end
+
+    %% ============ MULUT: NOTIFIKASI ============
+    subgraph MOUTH["📣 MULUT · NOTIFIKASI PROAKTIF (E6)"]
+        ALERT["⚠️ Push sinyal pair apapun:<br/>EUR_USD BUY di NFP!<br/>pola cocok 78% · conf 0.81"]
+        DIGEST["📰 Digest harian channel<br/>jadwal news + ringkasan"]
+    end
+
+    %% ============ TANGAN: EKSEKUSI BERSAKLAR ============
+    subgraph HAND["✋ TANGAN · EKSEKUSI BERSAKLAR (E4)"]
+        SWITCH{"🔓 Saklar Izin<br/>per-mode"}
+        SEMI["SEMI default:<br/>proposal → 👤 approve manual"]
+        AUTO["AUTO:<br/>langsung eksekusi<br/>hanya jika prob ≥ threshold"]
+        OFF["OFF:<br/>sinyal info saja"]
+        RISK["🛡️ RiskManager TETAP GERBANG:<br/>kill switch · DD breaker · daily loss<br/>max posisi · sizing ≤10%"]
+        EXEC["Nautilus Strategy<br/>SandboxExec paper →<br/>Live setelah go-live gate"]
+    end
+
+    %% ============ BICARA: AGENT CHAT ============
+    subgraph TALK["💬 BICARA · DISKUSI MARKET (E5)"]
+        CHAT["Chat bahasa bebas:<br/>gimana gold hari ini?<br/>kenapa BTC turun?"]
+        TOOLS["Tools internal:<br/>status · decisions · proposals<br/>backtests · forecast · kalender"]
+        CHAT --> TOOLS
+    end
+
+    %% ============ ALUR UTAMA ============
+    SIG --> ALERT
+    ALERT -->|"Telegram personal"| SWITCH
+    SWITCH --> OFF
+    SWITCH --> SEMI
+    SWITCH --> AUTO
+    SEMI -->|"👤 /approve"| RISK
+    AUTO -->|"prob≥threshold auto-approve<br/>dicatat approved_by=system:auto"| RISK
+    RISK -->|"✅"| EXEC
+    RISK -->|"❌ tolak + alasan"| DB
+
+    %% ============ FEEDBACK BELAJAR ============
+    EXEC -->|"hasil trade per event"| PLIB
+    EXEC -->|"fill/PnL events"| ALERT
+    MKT --> CHAT
+    DB --> TOOLS
+
+    classDef sense fill:#1e3a5f,stroke:#60a5fa,color:#e6e9ef
+    classDef brain fill:#3b2a5f,stroke:#a78bfa,color:#e6e9ef
+    classDef mouth fill:#1f3d2b,stroke:#34d399,color:#e6e9ef
+    classDef hand fill:#4a2c2c,stroke:#f87171,color:#e6e9ef
+    classDef talk fill:#3d3520,stroke:#fbbf24,color:#e6e9ef
