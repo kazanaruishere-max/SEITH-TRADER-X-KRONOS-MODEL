@@ -1,0 +1,103 @@
+%% SEITH — Workflow Utama End-to-End
+%% Lihat render di: https://mermaid.live atau VS Code extension "Markdown Preview Mermaid"
+flowchart TB
+    %% ============ DATA LAYER ============
+    subgraph DATA["📡 FASE 1 · DATA LAYER"]
+        direction LR
+        BN["Binance REST<br/>klines crypto"]
+        OA["OANDA v20<br/>candles forex"]
+        YF["yfinance<br/>saham US"]
+        ING["seith-data<br/>ingestion + quality check"]
+        PARQ[("Parquet Store<br/>data/parquet/TICKER/TF")]
+        SQL[("SQLite<br/>runs · findings · decisions<br/>proposals · risk_events")]
+        BN --> ING
+        OA --> ING
+        YF --> ING
+        ING --> PARQ
+        ING --> SQL
+    end
+
+    %% ============ ANALYSIS ============
+    subgraph BRAIN["🧠 FASE 2 · ANALYSIS ENGINE"]
+        direction TB
+        KRONOS["⚡ Kronos-base GPU<br/>lookback 400 bar → forecast 24 bar<br/>MC rollouts sample_count=8"]
+        TA["🤖 TradingAgents Multi-Agent<br/>Market · Sentiment · News · Fundamentals<br/>→ Bull vs Bear debate → Trader"]
+        LLM[("OpenRouter<br/>nemotron-120b free")]
+        KRONOS -->|"ForecastResult<br/>expected_return + confidence"| TA
+        LLM -.->|tool calls| TA
+        DEC["Decision JSON<br/>action · confidence · reports · reasoning"]
+        TA --> DEC
+        DEC --> SQL
+    end
+
+    %% ============ INTERFACE ============
+    subgraph UI["💬 FASE 3 · INTERFACES"]
+        direction LR
+        TGBOT["Telegram Bot<br/>@SeithAI_bot personal<br/>/analyze · chat NL"]
+        CHANNEL["Telegram Channel<br/>komunitas broadcast<br/>digest tersanitasi"]
+        HUB["Core API Hub :20130<br/>REST + WebSocket"]
+        DASH["Dashboard Next.js<br/>:3100 realtime"]
+        TGBOT --> CHANNEL
+        HUB --> DASH
+    end
+
+    %% ============ MONEY PATH ============
+    subgraph EXEC["💰 FASE 4 · EXECUTION money-path"]
+        direction TB
+        PROP["OrderProposal<br/>PENDING_APPROVAL"]
+        APPROVE["👤 HUMAN GATE<br/>/approve id di Telegram<br/>(wajib - Tier-0)"]
+        INTAKE["Intake Loop<br/>poll tiap 10s"]
+        RISK["🛡️ RiskManager<br/>1 kill switch? 2 drawdown ≥10%?<br/>3 daily loss ≥3%? 4 max posisi?<br/>5 sizing ≤10% equity"]
+        STRAT["Nautilus Strategy<br/>order_factory.market()"]
+        SANDBOX["SandboxExecClient<br/>PAPER mode<br/>(venue simulasi, data live)"]
+        LIVE["LiveExec Binance<br/>🔒 terkunci sampai go-live gate"]
+    end
+
+    %% ============ EVENTS ============
+    subgraph EVENTS["📊 EVENT STREAM"]
+        FILLED["Fill / PnL / Posisi"]
+        ALERT["Alert push<br/>risk breach · kill switch"]
+    end
+
+    %% ============ RESEARCH ============
+    subgraph RES["🔬 RESEARCH LOOP"]
+        VBT["vectorbt backtest<br/>walk-forward 1 tahun<br/>RankIC · hit-rate · DD"]
+        REPORT["Reports JSON/MD<br/>+ tearsheet dashboard"]
+        GATE{"Gerbang Metrik<br/>RankIC≥0.02 · hit≥52%<br/>DD≤10% ?"}
+    end
+
+    %% ============ ALUR UTAMA ============
+    PARQ --> KRONOS
+    DEC --> TGBOT
+    TGBOT -->|"user review sinyal"| PROP
+    PROP --> APPROVE
+    APPROVE --> INTAKE
+    INTAKE --> RISK
+    RISK -->|"✅ lolos semua"| STRAT
+    RISK -->|"❌ ditolak + alasan"| SQL
+    STRAT --> SANDBOX
+    SANDBOX -.->|"go-live gate lulus<br/>+ owner approval"| LIVE
+    SANDBOX --> FILLED
+    FILLED --> SQL
+    FILLED --> HUB
+    FILLED --> ALERT
+    ALERT --> TGBOT
+    DEC --> HUB
+    HUB --> TGBOT
+
+    %% ============ FEEDBACK LOOPS ============
+    PARQ --> VBT
+    VBT --> REPORT
+    REPORT --> GATE
+    GATE -->|"lulus"| LIVE
+    GATE -->|"gagal"| BRAIN
+
+    %% ============ KILL SWITCH ============
+    HALT["🛑 /halt kill switch"] -->|"blokir SEMUA"| RISK
+    HALT -->|"cancel pending"| PROP
+
+    classDef data fill:#1e3a5f,stroke:#60a5fa,color:#e6e9ef
+    classDef brain fill:#3b2a5f,stroke:#a78bfa,color:#e6e9ef
+    classDef ui fill:#1f3d2b,stroke:#34d399,color:#e6e9ef
+    classDef exec fill:#4a2c2c,stroke:#f87171,color:#e6e9ef
+    classDef research fill:#3d3520,stroke:#fbbf24,color:#e6e9ef

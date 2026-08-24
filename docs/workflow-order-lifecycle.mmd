@@ -1,0 +1,40 @@
+%% SEITH — Lifecycle Satu Order (money-path detail)
+%% Invariant Tier-0: APPROVED/SUBMITTED/FILLED wajib approved_by;
+%% trader node tidak percaya status dari wire.
+stateDiagram-v2
+    [*] --> PENDING_APPROVAL: Decision dari AI membuat proposal
+
+    PENDING_APPROVAL --> APPROVED: 👤 /approve id (approved_by WAJIB)
+    PENDING_APPROVAL --> REJECTED: 👤 /reject id
+    PENDING_APPROVAL --> CANCELLED: /halt atau risk reject
+
+    APPROVED --> SUBMITTED: Intake loop + RiskManager lolos
+    APPROVED --> CANCELLED: RiskManager tolak atau submit gagal
+
+    SUBMITTED --> FILLED: venue match (sandbox / live)
+    SUBMITTED --> CANCELLED: cancel atau halt
+
+    FILLED --> [*]: PnL tercatat → dashboard + notifikasi
+    REJECTED --> [*]
+    CANCELLED --> [*]
+
+    note right of APPROVED
+        Invariant keras di schema:
+        APPROVED / SUBMITTED / FILLED
+        wajib punya approved_by —
+        transisi ilegal = ValidationError
+    end note
+
+    note right of SUBMITTED
+        Trader node TIDAK percaya
+        field status dari wire —
+        verifikasi ulang ke
+        catatan milik sendiri
+        (seith-trading-safety)
+    end note
+
+    note left of PENDING_APPROVAL
+        Kill switch aktif:
+        semua submission ditolak,
+        proposal terbuka dibatalkan
+    end note
