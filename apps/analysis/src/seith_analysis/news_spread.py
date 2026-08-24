@@ -49,17 +49,28 @@ def widened_spread_multiplier(seconds_from_release: float) -> float:
     return DEFAULT_MULTIPLIER
 
 
-def effective_spread_bps(base_spread_bps: float, seconds_from_release: float) -> float:
-    """Spread efektif (bps) dengan widening window news."""
+def effective_spread_bps(base_spread_bps: float, seconds_from_release: float,
+                         max_multiplier: float | None = None) -> float:
+    """Spread efektif (bps) dengan widening window news.
+
+    `max_multiplier` membatasi pengali (sensitivitas utk event non-HIGH yang
+    secara empiris jarang melebar setiering rilis HIGH).
+    """
     if base_spread_bps < 0:
         raise ValueError("base_spread_bps wajib non-negatif")
-    return base_spread_bps * widened_spread_multiplier(seconds_from_release)
+    mult = widened_spread_multiplier(seconds_from_release)
+    if max_multiplier is not None:
+        if max_multiplier <= 0:
+            raise ValueError("max_multiplier wajib positif")
+        mult = min(mult, max_multiplier)
+    return base_spread_bps * mult
 
 
 def round_trip_cost_bps(base_spread_bps: float, entry_seconds_from_release: float,
-                        exit_seconds_from_release: float) -> float:
+                        exit_seconds_from_release: float,
+                        max_multiplier: float | None = None) -> float:
     """Biaya bolak-balik (entry + exit) dalam bps utk satu trade window news."""
     return (
-        effective_spread_bps(base_spread_bps, entry_seconds_from_release)
-        + effective_spread_bps(base_spread_bps, exit_seconds_from_release)
+        effective_spread_bps(base_spread_bps, entry_seconds_from_release, max_multiplier)
+        + effective_spread_bps(base_spread_bps, exit_seconds_from_release, max_multiplier)
     )

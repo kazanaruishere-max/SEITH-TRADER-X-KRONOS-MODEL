@@ -145,6 +145,7 @@ def simulate_trade(
     direction: int,
     ticker: str,
     event_type: str,
+    spread_cap: float | None = None,
 ) -> NewsTradeResult | None:
     """Simulasi satu trade: entry close bar rilis, exit H menit kemudian.
 
@@ -176,6 +177,7 @@ def simulate_trade(
         BASE_SPREAD_BPS.get(ticker, 2.0),
         entry_seconds_from_release=_ENTRY_OFFSET_SECONDS,
         exit_seconds_from_release=horizon_minutes * 60,
+        max_multiplier=spread_cap,
     )
     return NewsTradeResult(
         ticker=ticker.upper(),
@@ -199,8 +201,21 @@ def run_walk_forward(
     min_samples: int = 10,
     min_continuation_prob: float = 0.55,
     min_importance: EventImportance = EventImportance.MEDIUM,
+    direction_mode: str = "continuation",
+    medium_spread_cap: float | None = None,
+    fade_max_continuation_prob: float = 0.35,
 ) -> WalkForwardReport:
-    """Driver walk-forward penuh. Lihat docstring modul untuk desain."""
+    """Driver walk-forward penuh. Lihat docstring modul untuk desain.
+
+    direction_mode:
+      - "continuation": gate cont>=min_continuation_prob, arah ikut impuls.
+      - "mean_reversion": gate cont<=fade_max_continuation_prob (zona fade),
+        arah BERLAWANAN impuls awal (hipotesis pre-register #3).
+    medium_spread_cap: bila diisi, pengali spread event non-HIGH dibatasi
+      (sensitivitas hipotesis #2).
+    """
+    if direction_mode not in ("continuation", "mean_reversion"):
+        raise ValueError("direction_mode tidak dikenal")
     from seith_analysis.pattern_library import build_pattern_library
 
     ranked = {EventImportance.LOW: 1, EventImportance.MEDIUM: 2, EventImportance.HIGH: 3}
@@ -242,19 +257,27 @@ def run_walk_forward(
                 continue
             for h in horizons:
                 pat = by_key.get((ev.ticker.upper(), ev.event_type, h))
-                gated = (
-                    pat is not None
-                    and pat.sample_count >= min_samples
-                    and pat.prob_continuation >= min_continuation_prob
-                    and ranked[ev.importance] >= ranked[min_importance]
-                    and pat.prob_initial_up != 0.5
-                )
-                if not gated:
+                if pat is None or pat.prob_initial_up == 0.5 \
+                        or ranked[ev.importance] < ranked[min_importance]:
                     report.skipped_no_pattern_or_gate += 1
                     continue
-                direction = 1 if pat.prob_initial_up > 0.5 else -1
+                if direction_mode == "continuation":
+                    in_zone = pat.prob_continuation >= min_continuation_prob
+                    direction = 1 if pat.prob_initial_up > 0.5 else -1
+                else:  # mean_reversion: zona fade
+                    in_zone = pat.prob_continuation <= fade_max_continuation_prob
+                    direction = -1 if pat.prob_initial_up > 0.5 else 1
+                if not in_zone or pat.sample_count < min_samples:
+                    report.skipped_no_pattern_or_gate += 1
+                    continue
+                cap = (
+                    medium_spread_cap
+                    if medium_spread_cap is not None
+                    and ev.importance is not EventImportance.HIGH
+                    else None
+                )
                 trade = simulate_trade(df, ev.scheduled_at, h, direction,
-                                       ev.ticker, ev.event_type)
+                                       ev.ticker, ev.event_type, spread_cap=cap)
                 if trade is None:
                     report.skipped_no_grid += 1
                     continue

@@ -1,0 +1,26 @@
+events loaded : 781
+
+=== baseline_continuation ===
+bulan uji=11 trade=270 skip-gate=810 skip-grid=6
+EUR_USD   jobless_claims      60m n=12   win=  17% net=  -0.95% dd= 1.00% pfG=1.5297458212894304
+EUR_USD   jobless_claims      15m n=26   win=   0% net=  -3.05% dd= 3.05% pfG=0.69867834912107
+BTCUSDT   jobless_claims      15m n=19   win=  16% net=  -4.34% dd= 4.68% pfG=0.9267865489322139
+EUR_USD   jobless_claims       5m n=40   win=   0% net=  -6.04% dd= 6.04% pfG=1.7592616595449009
+ETHUSDT   jobless_claims      15m n=30   win=  10% net=  -7.22% dd= 7.22% pfG=1.3318215593420353
+BTCUSDT   jobless_claims       5m n=40   win=   5% net= -11.92% dd=11.98% pfG=1.4121832054896395
+ETHUSDT   jobless_claims       5m n=38   win=   5% net= -14.51% dd=14.51% pfG=1.2269454693092414
+
+=== continuation_medium_cap3x (H2) ===
+bulan uji=11 trade=270 skip-gate=810 skip-grid=6
+EUR_USD   jobless_claims      60m n=12   win=  25% net=  -0.35% dd= 0.45% pfG=1.5297458212894304
+EUR_USD   jobless_claims      15m n=26   win=   8% net=  -1.75% dd= 1.75% pfG=0.69867834912107
+EUR_USD   jobless_claims       5m n=40   win=  10% net=  -2.04% dd= 2.04% pfG=1.7592616595449009
+BTCUSDT   jobless_claims      15m n=19   win=  21% net=  -2.44% dd= 2.88% pfG=0.9267865489322139
+ETHUSDT   jobless_claims      15m n=30   win=  17% net=  -3.47% dd= 3.93% pfG=1.3318215593420353
+BTCUSDT   jobless_claims       5m n=40   win=  25% net=  -3.92% dd= 4.29% pfG=1.4121832054896395
+ETHUSDT   jobless_claims       5m n=38   win=  26% net=  -5.01% dd= 5.16% pfG=1.2269454693092414
+
+=== mean_reversion_fade<=35% (H3) ===
+bulan uji=11 trade=11 skip-gate=1075 skip-grid=0
+
+saved: C:\Users\Lenovo\PROJECT\SEITH\data\backtests\news_gate_a_iteration.json
