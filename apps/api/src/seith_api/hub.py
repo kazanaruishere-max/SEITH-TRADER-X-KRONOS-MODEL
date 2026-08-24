@@ -121,7 +121,7 @@ async def ws_endpoint(websocket: WebSocket) -> None:
 def main() -> None:
     import uvicorn
 
-    settings = get_settings()
+    get_settings().validate_startup()  # fail-fast: env tidak valid = gagal sebelum serve
     uvicorn.run(app, host="127.0.0.1", port=20130, log_level="info")
 
 

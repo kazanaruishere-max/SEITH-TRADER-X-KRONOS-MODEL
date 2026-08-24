@@ -46,8 +46,119 @@ async def cmd_start(message: Message) -> None:
     await message.answer(
         "SEITH control plane aktif.\n"
         "Perintah: /analyze <ticker> · /pending · /approve <id> · /reject <id>\n"
-        "/halt · /resume · /status · /recent · /broadcast <teks>"
+        "/halt · /resume · /status · /recent · /broadcast <teks>\n"
+        "/mode [off|semi|auto] · /calendar · /ask <pertanyaan>"
     )
+
+
+@router.message(Command("mode"))
+@_guard
+async def cmd_mode(message: Message, command: CommandObject) -> None:
+    """E4 TANGAN: saklar off/semi/auto. Default sistem SEMI."""
+    from seith_data.trading_mode import TradingMode, get_trading_mode, set_trading_mode
+
+    mode_now, min_conf, _ = get_trading_mode()
+    if not command.args:
+        await message.answer(
+            f"mode saat ini: <b>{mode_now.value}</b> "
+            f"(auto-min-confidence {min_conf:.0%})\n"
+            "Ubah: /mode off | semi | auto\n"
+            "<i>off=abaikan sinyal news · semi=wajib approve manual · "
+            "auto=proposal langsung APPROVED bila conf cukup (RiskManager tetap gerbang)</i>"
+        )
+        return
+    arg = command.args.strip().lower()
+    try:
+        new_mode = TradingMode(arg)
+    except ValueError:
+        await message.answer("❌ Mode tidak dikenal. Pilihan: off | semi | auto")
+        return
+    set_trading_mode(new_mode, updated_by=f"telegram:{_uid(message)}")
+    await message.answer(f"✅ Mode trading → <b>{new_mode.value}</b>")
+
+
+@router.message(Command("calendar"))
+@_guard
+async def cmd_calendar(message: Message) -> None:
+    """E6: rilis ekonomi 7 hari ke depan dari events store."""
+    from datetime import UTC, datetime, timedelta
+
+    from seith_data.events_store import load_economic_events
+
+    now = datetime.now(UTC)
+    events = load_economic_events(start=now, end=now + timedelta(days=7))
+    if not events:
+        await message.answer("Tidak ada rilis terjadwal 7 hari ke depan di store.")
+        return
+    seen: set[tuple[str, str]] = set()
+    lines: list[str] = []
+    for e in sorted(events, key=lambda x: x.scheduled_at):
+        key = (e.scheduled_at.isoformat(), e.event_type)
+        if key in seen:  # satu rilis dipetakan ke banyak ticker - tampilkan sekali
+            continue
+        seen.add(key)
+        when = e.scheduled_at.strftime("%d %b %H:%M UTC")
+        lines.append(f"· {when} · {e.currency} {e.event_type} ({e.importance.value})")
+        if len(lines) >= 12:
+            break
+    await message.answer("<b>Kalender 7 hari:</b>\n" + "\n".join(lines))
+
+
+@router.message(Command("ask"))
+@_guard
+async def cmd_ask(message: Message, command: CommandObject) -> None:
+    """E5 BICARA MVP: tanya market/kondisi akun dalam bahasa bebas via LLM."""
+    if not command.args:
+        await message.answer("Pemakaian: /ask bagaimana kondisi BTC hari ini?")
+        return
+
+    async def run_and_reply() -> None:
+        try:
+            answer = await asyncio.to_thread(_ask_llm, command.args.strip())
+            await message.answer(answer[:3500])
+        except Exception as exc:  # noqa: BLE001 - lapor gagal ke user
+            logger.exception("ask gagal")
+            await message.answer(f"❌ /ask gagal: {exc}")
+
+    asyncio.create_task(run_and_reply())
+
+
+def _ask_llm(question: str) -> str:
+    """Panggil LLM dengan konteks ringkas kontrol-plane; tanpa secret di prompt."""
+    import requests
+
+    from seith_api.digest import build_daily_digest, collect_digest_inputs
+
+    settings = get_settings()
+    if settings.llm.api_key is None:
+        raise RuntimeError("LLM belum terkonfigurasi (SEITH_LLM__API_KEY)")
+    context = build_daily_digest(**collect_digest_inputs(settings))
+    resp = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={"Authorization": f"Bearer {settings.llm.api_key.get_secret_value()}"},
+        json={
+            "model": settings.llm.quick_model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "Kamu asisten trading pribadi SEITH (paper mode). Jawab "
+                        "singkat dalam bahasa pengguna berdasarkan konteks berikut. "
+                        "Jangan mengarang data di luar konteks.\n\n" + context
+                    ),
+                },
+                {"role": "user", "content": question},
+            ],
+            "max_tokens": 700,
+        },
+        timeout=60,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    choice = data.get("choices", [{}])[0].get("message", {}).get("content")
+    if not choice:
+        raise RuntimeError(f"jawaban LLM kosong: {str(data)[:120]}")
+    return str(choice)
 
 
 @router.message(Command("analyze"))
@@ -188,18 +299,40 @@ async def cmd_broadcast(message: Message, command: CommandObject) -> None:
     await message.answer("📡 Terkirim ke channel." if ok else "❌ Gagal kirim ke channel.")
 
 
-async def send_channel(text: str) -> bool:
-    settings = get_settings()
-    if not settings.telegram.channel_configured:
-        return False
-    try:
-        bot = Bot(token=settings.telegram.bot_token.get_secret_value())  # type: ignore[union-attr]
-        async with bot.session:
-            await bot.send_message(settings.telegram.channel_id, text)
-        return True
-    except Exception:  # noqa: BLE001
-        logger.exception("broadcast channel gagal")
-        return False
+# CATATAN M-3 (security review): implementasi send_channel kini SATU sumber di
+# seith_api/broadcast.py - duplikat lokal dihapus karena membuat modul itu
+# tampak opsional padahal /analyze & /broadcast meng-import-nya.
+
+
+async def _digest_loop(bot: Bot) -> None:
+    """E6: kirim digest harian jam 13:00 WIB (Asia/Jakarta) ke owner (+channel).
+
+    Hardened: kegagalan satu iterasi TIDAK mematikan loop (no silent death).
+    """
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+
+    from seith_api.digest import build_daily_digest, collect_digest_inputs
+
+    while True:
+        try:
+            jakarta = ZoneInfo("Asia/Jakarta")
+            now = datetime.now(jakarta)
+            target = now.replace(hour=13, minute=0, second=0, microsecond=0)
+            if target <= now:
+                target += timedelta(days=1)
+            await asyncio.sleep((target - now).total_seconds())
+            settings = get_settings()
+            text = build_daily_digest(**collect_digest_inputs(settings))
+            if settings.telegram.allowed_user_ids:
+                await bot.send_message(settings.telegram.allowed_user_ids[0], text)
+            if settings.telegram.channel_configured:
+                await bot.send_message(settings.telegram.channel_id, text)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - digest gagal tak boleh matikan bot
+            logger.exception("iterasi digest gagal - retry siklus berikutnya")
+        await asyncio.sleep(60)  # hindari double-fire dalam menit yang sama
 
 
 async def main() -> None:
@@ -212,6 +345,13 @@ async def main() -> None:
     bot = Bot(token=settings.telegram.bot_token.get_secret_value())  # type: ignore[union-attr]
     dp = Dispatcher()
     dp.include_router(router)
+    digest_task = asyncio.create_task(_digest_loop(bot))
+
+    def _digest_died(task: asyncio.Task) -> None:
+        if not task.cancelled() and task.exception() is not None:
+            logger.error("digest loop MATI permanen", exc_info=task.exception())
+
+    digest_task.add_done_callback(_digest_died)
     logger.info("SEITH bot polling... (allowlist: %s)", list(settings.telegram.allowed_user_ids))
     await dp.start_polling(bot)
 
