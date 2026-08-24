@@ -45,11 +45,20 @@ Untuk setiap temuan, putuskan salah satu:
 Aturan: temuan CRITICAL/BLOCKER pada money-path atau secret WAJIB fix sebelum
 fase ditutup. Tidak ada "nanti dulu" untuk kategori itu.
 
-## Langkah 4 — Dokumentasi
+## Langkah 4 — Dokumentasi & Governance
 
 - Keputusan arsitektur baru → ADR baru di `docs/adr/` (nomor urut).
 - Requirement berubah → update `docs/PRD.md`.
 - Pelajaran operasional gotcha baru → update `AGENTS.md` §5 atau skill `seith-dev`.
+- **doc-updater pass**: sinkronkan README/ADR/changelog dengan realita kode
+  yang berubah di fase ini (WAJIB - lihat AGENTS.md §8 Lapisan 3).
+
+## Cadence Governance Terkait Fase (AGENTS.md §8)
+
+- [ ] Conventional commit + dampak docs dicek tiap commit dalam fase.
+- [ ] Audit drift GitHub repo-vs-dokumen bila fase melewati >1 minggu.
+- [ ] Bila fase ini gerbang pra-forward-test: security-reviewer MANDATORY
+      + architect sign-off tercatat sebelum forward test boleh dimulai.
 
 ## Langkah 5 — Laporan penutupan fase ke user
 

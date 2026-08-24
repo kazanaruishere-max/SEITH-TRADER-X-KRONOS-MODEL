@@ -108,20 +108,49 @@ Fase dinyatakan done HANYA jika semua hijau:
 4. Review gate lewat (skill `seith-phase-gate`).
 5. Dokumentasi ter-update (ADR untuk keputusan, PRD untuk requirement berubah).
 
-## 8. Delegation Map (lead memanggil sesuai kebutuhan)
+## 8. Tim & Delegasi (struktur lengkap - WAJIB dipatuhi semua harness)
 
-| Kebutuhan | Sub-agent / Skill |
-|---|---|
-| Code review kualitas | sub-agent `python-reviewer` / `code-reviewer` |
-| Security audit | sub-agent `security-reviewer` (+ skill `security-review`) |
-| TDD / test design | sub-agent `tdd-guide` (+ skill `tdd-workflow`) |
-| E2E testing | sub-agent `e2e-runner` |
-| Fix build/type error | sub-agent `build-error-resolver` |
-| Refactor/cleanup | sub-agent `refactor-cleaner` |
-| Riset library/API resmi | sub-agent `docs-lookup` (Context7) |
-| Explore codebase besar | sub-agent `explorer` / graphify query |
-| Debug sulit | skill `diagnose` |
-| Verifikasi akhir fase | skill `seith-phase-gate` |
+### Lapisan 1 - Kepemimpinan
+| Peran | Eksekutor | Tanggung jawab |
+|---|---|---|
+| Lead / Orchestrator | opencode | Pegang semuanya; semua output delegasi diverifikasi lead |
+| Arsitek reviewer | sub-agent `architect` | Audit struktur SEBELUM fase besar dimulai |
+| Perencana fase kompleks | sub-agent `planner` | Forward-test 30 hari, refactor lintas service |
+
+### Lapisan 2 - Kualitas & Keamanan (gate wajib)
+| Peran | Agent | Kapan |
+|---|---|---|
+| Auditor kode Python | `python-reviewer` | Tiap modul baru; audit harness backtest (anti-lookahead) |
+| Auditor keamanan | `security-reviewer` | Money-path; MANDATORY sebelum forward test |
+| Desainer test | `tdd-guide` | Matrix regression money-path, test plan per fase |
+| Review diff besar | `code-review` | Batch commit besar / pra-merge |
+
+### Lapisan 3 - Governance & Dokumentasi
+| Peran | Eksekutor | Kapan |
+|---|---|---|
+| Penjaga dokumentasi | `doc-updater` | Setiap merge: sinkron README/ADR/changelog/docs dengan realita kode |
+| Penjaga GitHub | LEAD langsung (github tools) | Konvensi commit + audit mingguan drift repo-vs-dokumen |
+| Penjaga memori | skill `remember` + `handoff` | Fakta penting -> memory; konteks sesi -> handoff |
+| Gate fase | skill `seith-phase-gate` | Protokol penutupan fase (dual-review) |
+
+### Lapisan 4 - Dukungan Teknis (on-demand)
+| Peran | Agent | Kapan |
+|---|---|---|
+| Fix build/boot error | `build-error-resolver` | Boot node.py, error kompilasi |
+| Riset vendor/library | `docs-lookup` / `deep-research` | API berubah, limits provider |
+| Eksplorasi cepat | `explorer` | Debug area kode luas |
+| Refactoring | `refactor-cleaner` | Pasca-batch testing |
+| Ops otonom | `loop-operator` | Monitoring siklus harian forward-test 30 hari |
+| E2E web | `e2e-runner` | Dashboard+hub Playwright (P6) |
+
+### Tata Tertib Cadence (WAJIB)
+```
+Tiap commit   : conventional commit + doc-updater cek dampak docs
+Tiap fase     : seith-phase-gate (python-reviewer + security-reviewer paralel)
+Tiap minggu   : audit GitHub drift repo-vs-docs + laporan status owner
+Pra-forward   : security-reviewer MANDATORY + architect sign-off
+Selama 30-hri : loop-operator monitor + laporan harian otomatis
+```
 
 Aturan delegasi: tugas paralel/independen boleh paralel; hasil selalu
 ditriage oleh lead; temuan valid difix, tolakan didokumentasikan alasannya.
