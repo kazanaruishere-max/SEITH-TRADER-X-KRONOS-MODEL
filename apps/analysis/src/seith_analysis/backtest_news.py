@@ -16,8 +16,10 @@ SIZING: unit exposure - hasil dalam % return per satuan notional. Sizing riil
 adalah wewenang RiskManager saat intake; angka ini untuk evaluasi strategi.
 
 BATASAN JUJUR: gate surprise-factor trigger LIVE tidak dapat direplikasi di
-historis (event FRED actual=None); Gate-A menguji EDGE POLA continuation,
-bukan edge surprise. Bucket KUAT hasilnya adalah kandidat, bukan janji.
+historis (event FRED actual=None); demikian pula Kronos-agreement filter.
+Gate-A menguji EDGE POLA continuation MURNI tanpa kedua filter itu - dan
+karena filter tersebut hanya bisa MENOLAK trade, hasil FAIL di superset ini
+tetap sah untuk no-go; hasil PASS baru berlaku setelah replikasi forward.
 """
 
 from __future__ import annotations

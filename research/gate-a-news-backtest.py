@@ -76,8 +76,9 @@ def main() -> int:
           f" | skip-gate: {report.skipped_no_pattern_or_gate}")
 
     print("\n=== HASIL PER BUCKET (net % kumulatif, biaya spread termasuk) ===")
+    print("CATATAN: kolom pf = profit factor GROSS (sebelum biaya); verdict selalu NET.")
     print(f"{'ticker':9} {'event_type':18} {'h':>4} {'n':>4} {'win%':>6} "
-          f"{'net%':>8} {'dd%':>6} {'pf':>6} {'verdict':>9}")
+          f"{'net%':>8} {'dd%':>6} {'pfG':>6} {'verdict':>9}")
     for s in report.stats:
         if s.n_trades < 3:
             continue

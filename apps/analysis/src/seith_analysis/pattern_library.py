@@ -99,6 +99,11 @@ def measure_release_window(
     for minutes in sorted(horizons):
         end = release_at + pd.Timedelta(minutes=minutes)
         start_pos = pos_release  # bar pertama dalam window = bar bertimestamp rilis
+        # konsisten dgn simulate_trade: bar rilis bolong -> baseline jadi harga
+        # pasca-spike (distorsi sampel train) - tolak event, jangan geser window
+        if idx[start_pos] > release_at + pd.Timedelta(minutes=1):
+            logger.debug("rilis %s dilewati: bar rilis bolong", event_id)
+            return ()
         end_pos = int(idx.searchsorted(end, side="left"))
         window = m1.iloc[start_pos:end_pos]
         # anti-lookahead rules 3+4: wajib persis H bar DAN kontinu interior -
