@@ -7,6 +7,7 @@ Semua handler di-guard auth; non-allowlist diabaikan diam-diam + log warn.
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 
 from aiogram import Bot, Dispatcher, Router
@@ -27,12 +28,14 @@ def _uid(message: Message) -> int | None:
 
 
 def _guard(handler):
+    accepted = set(inspect.signature(handler).parameters) - {"message"}
+
     async def wrapper(message: Message, *args, **kwargs):
         settings = get_settings()
         if not is_authorized(_uid(message), settings):
             logger.warning("unauthenticated access dari %s - diabaikan", _uid(message))
             return
-        return await handler(message, *args, **kwargs)
+        return await handler(message, **{k: v for k, v in kwargs.items() if k in accepted})
 
     return wrapper
 

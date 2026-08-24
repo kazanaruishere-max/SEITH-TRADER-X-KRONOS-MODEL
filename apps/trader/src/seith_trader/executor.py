@@ -32,14 +32,15 @@ class DryRunSubmitter:
 
 def build_market_order_args(proposal: OrderProposal, quantity: Decimal, instrument_id: str) -> dict:
     """Argumen untuk strategy.order_factory.market(...) - dipanggil dari live node."""
-    from nautilus_trader.model.enums import OrderSide
+    from nautilus_trader.model.enums import OrderSide, TimeInForce
+    from nautilus_trader.model.identifiers import InstrumentId
     from nautilus_trader.model.objects import Quantity
 
     side = OrderSide.BUY if proposal.side.value == "buy" else OrderSide.SELL
     precision = 8 if proposal.asset_class.value == "crypto" else 2
     return {
-        "instrument_id": instrument_id,
+        "instrument_id": InstrumentId.from_str(instrument_id),
         "order_side": side,
         "quantity": Quantity.from_str(f"{quantity:.{precision}f}"),
-        "time_in_force": None,
+        "time_in_force": TimeInForce.GTC,
     }

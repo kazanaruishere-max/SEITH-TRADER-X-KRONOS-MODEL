@@ -34,6 +34,7 @@ from nautilus_trader.config import (
     TradingNodeConfig,
 )
 from nautilus_trader.live.node import TradingNode
+from nautilus_trader.model.identifiers import InstrumentId
 from nautilus_trader.trading.config import StrategyConfig
 from nautilus_trader.trading.strategy import Strategy
 from seith_core.config import AppSettings, get_settings
@@ -46,6 +47,9 @@ from seith_trader.intake import Submitter, process_pending
 logger = logging.getLogger("seith.node")
 
 _INSTRUMENTS = ("BTCUSDT", "ETHUSDT")
+_INSTRUMENT_IDS = frozenset(
+    InstrumentId.from_str(f"{t}.BINANCE") for t in _INSTRUMENTS
+)
 _INTAKE_INTERVAL_SECONDS = 10
 
 
@@ -66,14 +70,16 @@ class IntakeStrategyMixin:
     def submit_via_nautilus(
         self: Strategy, proposal: OrderProposal, quantity: Decimal
     ) -> str | None:
-        instrument_id = f"{proposal.ticker}.SPOT"
+        instrument_id = f"{proposal.ticker}.BINANCE"
         try:
             args = build_market_order_args(proposal, quantity, instrument_id)
             order = self.order_factory.market(**args)
             self.submit_order(order)
             return str(order.client_order_id)
-        except Exception:  # noqa: BLE001 - dilaporkan ke intake sebagai gagal submit
+        except Exception as exc:  # noqa: BLE001 - dilaporkan ke intake sebagai gagal submit
             logger.exception("nautilus submit gagal untuk %s", proposal.proposal_id)
+            # Detail error masuk DB - logging python bisa tertelan oleh logger internal nautilus.
+            risk.record_risk_event("submit_error", f"{proposal.proposal_id}: {exc!r}")
             return None
 
 
@@ -81,6 +87,11 @@ def build_intake_strategy() -> tuple[Strategy, Submitter]:
     class _Intake(IntakeStrategyMixin, Strategy):
         def __init__(self) -> None:
             super().__init__(config=StrategyConfig(strategy_id="SEITH-INTAKE-001"))
+
+        def on_start(self) -> None:
+            # Subscribe market data agar sandbox punya harga utk simulasi fill.
+            for t in _INSTRUMENTS:
+                self.subscribe_quote_ticks(InstrumentId.from_str(f"{t}.BINANCE"))
 
     strategy = _Intake()
 
@@ -129,17 +140,20 @@ def build_node() -> TradingNode:
         cache=CacheConfig(),
         message_bus=MessageBusConfig(),
         data_clients={
-            BINANCE.value: BinanceDataClientConfig(
+            BINANCE: BinanceDataClientConfig(
                 account_type=BinanceAccountType.SPOT,
-                instrument_provider=InstrumentProviderConfig(load_ids_on_futures=False),
+                instrument_provider=InstrumentProviderConfig(load_ids=_INSTRUMENT_IDS),
             ),
         },
         exec_clients={
-            "SANDBOX": SandboxExecutionClientConfig(venue=BINANCE.value),
+            "SANDBOX": SandboxExecutionClientConfig(
+                venue=BINANCE,
+                starting_balances=[f"{_equity_base():n} USDT"],
+            ),
         },
     )
     node = TradingNode(config=config)
-    node.add_data_client_factory(BINANCE.value, BinanceLiveDataClientFactory)
+    node.add_data_client_factory(BINANCE, BinanceLiveDataClientFactory)
     node.add_exec_client_factory("SANDBOX", SandboxLiveExecClientFactory)
     return node
 
@@ -158,4 +172,10 @@ async def amain() -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    # Handler eksplisit utk logger seith.* - selamat dari takeover logging oleh nautilus.
+    _app_fh = logging.FileHandler("seith_app.log", encoding="utf-8")
+    _app_fh.setFormatter(
+        logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+    )
+    logging.getLogger("seith").addHandler(_app_fh)
     asyncio.run(amain())

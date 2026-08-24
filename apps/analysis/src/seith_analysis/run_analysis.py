@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import sys
 from datetime import UTC, datetime
 
 from pydantic import TypeAdapter
@@ -170,6 +171,8 @@ def asset_type_of(asset_class: AssetClass) -> str:
 
 
 def main() -> None:
+    if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows console (cp1252) safety
     parser = argparse.ArgumentParser(description="SEITH full analysis pipeline")
     parser.add_argument("--ticker", required=True)
     parser.add_argument("--timeframe", default="1h")
