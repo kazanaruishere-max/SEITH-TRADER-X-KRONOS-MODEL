@@ -12,6 +12,7 @@ di modul ini, bukan update SQL bebas.
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 from contextlib import closing
 from datetime import UTC, datetime
@@ -31,6 +32,8 @@ from seith_core.schemas import (
 )
 
 _validate_ticker = TypeAdapter(Ticker)
+
+logger = logging.getLogger("seith.proposals")
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS order_proposals (
@@ -56,8 +59,11 @@ CREATE INDEX IF NOT EXISTS idx_proposals_status ON order_proposals (status);
 
 def _connect(settings: AppSettings) -> sqlite3.Connection:
     settings.ensure_dirs()
-    conn = sqlite3.connect(settings.db_path)
+    conn = sqlite3.connect(settings.db_path, timeout=10)
     conn.row_factory = sqlite3.Row
+    # bridge (proses lain) + intake (worker thread) menulis DB yang sama;
+    # busy_timeout mencegah OperationalError sporadis saat lock burst
+    conn.execute("PRAGMA busy_timeout = 10000")
     return conn
 
 
@@ -65,12 +71,19 @@ def init_tables(settings: AppSettings | None = None) -> None:
     s = settings or get_settings()
     with closing(_connect(s)) as conn:
         conn.executescript(_SCHEMA)
+        # anti double-create lintas siklus/restart: satu signal_id satu proposal
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_proposals_signal"
+            " ON order_proposals(signal_id)"
+        )
         conn.commit()
 
 
 def _save(conn: sqlite3.Connection, p: OrderProposal) -> None:
     conn.execute(
-        "INSERT OR REPLACE INTO order_proposals"
+        # INSERT murni (BUKAN OR REPLACE): UNIQUE(signal_id) wajib melempar
+        # IntegrityError agar dedup bridge terdeteksi, bukan diam-diam menimpa.
+        "INSERT INTO order_proposals"
         " (proposal_id, signal_id, decision_id, ticker, asset_class, side, quantity,"
         "  order_type, limit_price, status, created_at, approved_by, approved_at,"
         "  updated_at, raw_json)"
@@ -111,8 +124,14 @@ def create_proposal(
     limit_price: Decimal | None = None,
     settings: AppSettings | None = None,
 ) -> OrderProposal:
+    """Idempoten per signal_id (UNIQUE index): duplikat return proposal existing."""
     s = settings or get_settings()
     init_tables(s)
+    existing = load_by_signal_id(signal_id, s)
+    if existing is not None:
+        logger.info("proposal utk signal_id %s sudah ada (%s) - skip",
+                    signal_id[:24], existing.proposal_id)
+        return existing
     proposal = OrderProposal(
         signal_id=signal_id,
         ticker=_validate_ticker.validate_python(ticker),
@@ -124,9 +143,30 @@ def create_proposal(
         decision_id=decision_id,
     )
     with closing(_connect(s)) as conn:
-        _save(conn, proposal)
-        conn.commit()
+        try:
+            _save(conn, proposal)
+            conn.commit()
+        except sqlite3.IntegrityError as exc:
+            conn.rollback()
+            raced = load_by_signal_id(signal_id, s)
+            if raced is not None:
+                logger.info("race dedup: signal_id %s sudah ada - pakai existing",
+                            signal_id[:24])
+                return raced
+            raise ValueError(f"integritas proposal gagal: {exc}") from exc
     return proposal
+
+
+def load_by_signal_id(
+    signal_id: str, settings: AppSettings | None = None
+) -> OrderProposal | None:
+    s = settings or get_settings()
+    init_tables(s)
+    with closing(_connect(s)) as conn:
+        row = conn.execute(
+            "SELECT raw_json FROM order_proposals WHERE signal_id = ?", (signal_id,)
+        ).fetchone()
+    return OrderProposal.model_validate_json(row["raw_json"]) if row else None
 
 
 def load(proposal_id: str, settings: AppSettings | None = None) -> OrderProposal | None:

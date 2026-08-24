@@ -2677,6 +2677,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "requests" },
     { name = "seith-core" },
+    { name = "tzdata" },
     { name = "yfinance" },
 ]
 
@@ -2687,6 +2688,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=17" },
     { name = "requests", specifier = ">=2.32" },
     { name = "seith-core", editable = "../../packages/seith-core" },
+    { name = "tzdata", specifier = ">=2024.1" },
     { name = "yfinance", specifier = ">=0.2.50" },
 ]
 

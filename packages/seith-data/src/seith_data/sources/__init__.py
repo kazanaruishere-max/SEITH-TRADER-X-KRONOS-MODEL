@@ -1,6 +1,16 @@
-"""Source modules: binance (ccxt), oanda (v20 REST), yfinance."""
+"""Source modules: binance (ccxt), oanda (v20 REST), yfinance,
+economic_calendar (Finnhub/ForexFactory/FRED), cryptopanic, coindesk, rss."""
 
-from seith_data.sources import binance, oanda, yf
+from seith_data.sources import (
+    binance,
+    coindesk_news,
+    cryptopanic,
+    economic_calendar,
+    fred_calendar,
+    oanda,
+    rss_news,
+    yf,
+)
 from seith_data.sources.binance import QUOTES
 
 
@@ -19,4 +29,15 @@ def detect_source(ticker: str) -> str:
     return "yfinance"
 
 
-__all__ = ["QUOTES", "binance", "detect_source", "oanda", "yf"]
+__all__ = [
+    "QUOTES",
+    "binance",
+    "coindesk_news",
+    "cryptopanic",
+    "detect_source",
+    "economic_calendar",
+    "fred_calendar",
+    "oanda",
+    "rss_news",
+    "yf",
+]

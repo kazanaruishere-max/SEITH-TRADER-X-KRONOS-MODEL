@@ -105,6 +105,46 @@ class KronosSettings(_FrozenModel):
     device: Literal["cuda", "cpu", "auto"] = "auto"
 
 
+class FinnhubSettings(_FrozenModel):
+    """Kalender ekonomi (E1 MATA). Free tier: endpoint calendar/economic."""
+
+    api_key: SecretStr | None = None
+
+    @property
+    def configured(self) -> bool:
+        return self.api_key is not None
+
+
+class CryptoPanicSettings(_FrozenModel):
+    """Berita crypto (E1 MATA). Token gratis dari cryptopanic.com developers."""
+
+    auth_token: SecretStr | None = None
+
+    @property
+    def configured(self) -> bool:
+        return self.auth_token is not None
+
+
+class CoinDeskSettings(_FrozenModel):
+    """Berita crypto via CoinDesk Data/CCData (primer E1; key gratis CCData)."""
+
+    api_key: SecretStr | None = None
+
+    @property
+    def configured(self) -> bool:
+        return self.api_key is not None
+
+
+class FredSettings(_FrozenModel):
+    """Kalender ekonomi historis via FRED/ALFRED (ADR-0003; key gratis)."""
+
+    api_key: SecretStr | None = None
+
+    @property
+    def configured(self) -> bool:
+        return self.api_key is not None
+
+
 def _unwrap_model(annotation: object) -> type[BaseModel] | None:
     """Ambil subclass BaseModel dari annotation (termasuk Optional[X])."""
     candidates: tuple[object, ...]
@@ -154,6 +194,10 @@ class AppSettings(BaseSettings):
     binance: BinanceSettings = BinanceSettings()
     oanda: OandaSettings = OandaSettings()
     kronos: KronosSettings = KronosSettings()
+    finnhub: FinnhubSettings = FinnhubSettings()
+    cryptopanic: CryptoPanicSettings = CryptoPanicSettings()
+    coindesk: CoinDeskSettings = CoinDeskSettings()
+    fred: FredSettings = FredSettings()
     risk: RiskLimits = RiskLimits()
 
     @model_validator(mode="after")

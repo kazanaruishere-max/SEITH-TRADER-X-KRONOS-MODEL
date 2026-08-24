@@ -9,6 +9,7 @@ dependencies = [
     "pandas>=2.2",
     "pyarrow>=17",
     "requests>=2.32",
+    "tzdata>=2024.1",
     "yfinance>=0.2.50",
 ]
 

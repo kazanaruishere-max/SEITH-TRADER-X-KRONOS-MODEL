@@ -34,8 +34,12 @@ def healthy_portfolio() -> risk.PortfolioState:
 
 
 def make_proposal(settings, **overrides):
+    import uuid
+
     defaults = dict(
-        signal_id="sig_test",
+        # signal_id unik per panggilan: dedup UNIQUE(signal_id) sengaja menolak
+        # duplikat sejak wiring E3 (idempotent bridge) - test butuh entitas beda
+        signal_id=f"sig_test_{uuid.uuid4().hex[:12]}",
         ticker="BTCUSDT",
         asset_class=AssetClass.CRYPTO,
         side=Side.BUY,
