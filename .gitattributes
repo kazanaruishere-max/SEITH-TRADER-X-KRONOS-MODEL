@@ -1,0 +1,9 @@
+# Vendor directories are vendored deps (pin via git, see ADR-0002).
+# Force LF line endings so byte-level pinning is preserved and
+# Windows autocrlf does NOT rewrite diffs into the worktree.
+vendor/** -text
+
+# SEITH-owned Python stays normal-auto-crlf.
+*.py text eol=lf
+*.mmd text eol=lf
+*.md text eol=lf
