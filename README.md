@@ -1,61 +1,75 @@
-# SEITH - Personal AI Hedge Fund Platform
+# SEITH · AI Hedge Fund (paper-trading)
 
-> **Agent harness?** Baca [`AGENTS.md`](AGENTS.md) sebelum menulis kode.
+`SEITH` = personal AI hedge fund platform. AI multi-agent (TradingAgents + Groq/OpenRouter) →
+Kronos price-forecast (GPU lokal RTX 4050) → backtest (vectorbt-style walk-forward) →
+paper execution (nautilus_trader sandbox). Kontrol via **Telegram bot @SeithAI_bot**
+atau dashboard web. Mode operasi: **paper trading penuh** — live trading terkunci di balik
+gerbang go-live (lihat `docs/PRD.md`).
 
-Platform trading personal berbasis AI multi-agent dengan workflow hedge fund:
-analisis multi-market (crypto, saham US, forex), prediksi harga foundation-model,
-backtesting vektorisasi, dan eksekusi paper-trading production-grade.
+> ⚠️ Repo ini **source-available, bukan community project**. Lihat [CONTRIBUTING](#contributing)
+> dan [LICENSE](#lisensi).
 
-## Arsitektur
+## Struktur
 
 ```
-Telegram (aiogram) ─┐                    ┌─ Dashboard (Next.js + WS)
-                    ▼                    ▼
-              [ Core API - FastAPI ]  <- REST + WebSocket
-                    |
-      +-------------+---------------+
-      v             v               v
- Analysis Svc   vectorbt       Trader Node
- TradingAgents  (backtest      nautilus_trader:
- + Kronos GPU   + tearsheet)   SignalActor -> RiskMgr -> SandboxExec -> Binance feed
+apps/
+  api/       FastAPI hub + Telegram bot (B1-B4)      ← interaksi manusia
+  analysis/  Kronos forecast + TradingAgents + backtest
+  trader/    nautilus_trader node (SignalActor→RiskMgr→SandboxExec)
+  dashboard/ Next.js 15 web UI
+packages/
+  seith-core   domain schemas (Pydantic, frozen, extra=forbid) — KONTRAK semua service
+  seith-data   ingestion (Binance/OANDA/yfinance) + Parquet/SQLite store
+vendor/       Kronos + TradingAgents (fork ter-pin, jangan git pull vendor)
+docs/         PRD · ADR · workflow .mmd · kronos-notes
+.handoff/     checkpoint sesi (gitignored)
 ```
 
-## Struktur Monorepo
-
-| Path | Isi |
-|---|---|
-| `apps/api` | Core API FastAPI + Telegram bot (orchestrator hub) |
-| `apps/analysis` | TradingAgents (Groq) + Kronos inference + backtest runner |
-| `apps/trader` | nautilus_trader node: signal intake, risk manager, sandbox execution |
-| `packages/seith-core` | Shared domain schemas (Pydantic) + config/secrets loader |
-| `vendor/` | Fork Kronos & TradingAgents untuk customisasi |
-| `research/` | Notebook eksperimen vectorbt & fine-tune Kronos |
-| `docs/` | PRD, ADR, runbook |
-
-## Setup
-
-Prasyarat: [uv](https://docs.astral.sh/uv/) terpasang, git, GPU NVIDIA + driver CUDA (untuk Kronos).
+## Mulai (dev)
 
 ```powershell
-# Sinkronisasi semua environment (per-app venv otomatis dari uv workspace)
-uv sync --project packages/seith-core
-uv sync --project apps/api
-uv sync --project apps/trader
-uv sync --project apps/analysis
-
-# Jalankan tests seith-core
-uv run --project packages/seith-core pytest
+# tiap app adalah proyek uv INDEPENDEN (bukan workspace). Jalankan dari dalam dir proyek.
+cd apps\api          ; uv sync ; uv run python -m seith_api.bot           # bot
+cd apps\trader       ; uv sync ; uv run python -m seith_trader.node        # trader node
+cd apps\analysis     ; uv sync ; uv run python -m seith_analysis.run_analysis --ticker BTCUSDT
 ```
 
-Copy `.env.example` ke `.env`, isi secret sesuai kebutuhan fase.
+Env (wajib sebelum run, dari root repo):
 
-## Keamanan
+```
+$env:SEITH_ENV_FILE="C:\Users\Lenovo\PROJECT\SEITH\.env"
+$env:SEITH_DATA_DIR ="C:\Users\Lenovo\PROJECT\SEITH\data"
+$env:SEITH_DB_PATH  ="C:\Users\Lenovo\PROJECT\SEITH\data\seith.db"
+```
 
-- Secret hanya via `.env` / keyring - tidak pernah masuk kode atau log.
-- Saat live nanti: API key Binance wajib **trade-only** (tanpa izin withdrawal) + IP whitelist.
-- Fase paper tidak membutuhkan key trading sama sekali.
+Gotcha lihat `AGENTS.md` §5 (uv multi-env, never sync from root, reinstall-package setelah tambah file).
 
-## Dokumentasi
+## Testing
 
-- `docs/PRD.md` - Product Requirements Document
-- `docs/adr/` - Architecture Decision Records
+- **Satuan**: `uv run pytest` dari tiap app dir (lint via `uvx ruff check .`).
+- **TB#1 (end-of-phase e2e)**: `/analyze BTCUSDT` penuh + tes interaksi bot dari HP.
+  Butuh kuota OpenRouter (reset harian 07:00 WIB) + GPU lokal. Lihat `.handoff/TB1-test-plan.md`.
+
+## Contributes / Lisensi
+
+### Contributing — CLOSED (Kebijakan Kolaborasi)
+Repo ini **source-available open-source** (GPL-3.0) tapi kolaborasi adalah **invite-only
+eksklusif founder**. Tidak ada PR, issue, atau intervensi pihak ketiga yang diterima,
+dipertimbangkan, atau dipengaruhi tanpa izin tertulis founder. Ini kebijakan di atas
+lisensi (Terms-of-Use / kebijakan repositori), bukan pembatasan hak lisensi. Founder
+adalah satu-satunya orang yang mengontrol arah dan isi repository ini "untuk jadi".
+
+Lisensi GPL-3.0 tetap memberi orang hak untuk **membaca, menjalankan, dan menyalin**
+source secara gratis — kolaborasi (modifikasi-untuk-upstream / fork-management /
+third-party interference) tidak termasuk dalam lisensi ini dan disisihkan kebijakan.
+
+### Lisensi
+[`LICENSE`](LICENSE) — **GNU General Public License v3.0**. Strong copyleft; semua
+right to distribute/modify tetap ada, tapi hak kolaborasi dan governance repositori
+disisihkan eksklusif ke founder (lihat kebijakan di atas).
+
+Lihat `docs/adr/0004-license-and-collaboration-policy.md` untuk justifikasi pemilihan
+lisensi dan keputusan yang dibuang (custom license vs GPL, OSI-strict vs source-available).
+
+---
+*Mode awal = paper trading. Keputusan go-live hanya melalui approval manusia (Tier-0).*

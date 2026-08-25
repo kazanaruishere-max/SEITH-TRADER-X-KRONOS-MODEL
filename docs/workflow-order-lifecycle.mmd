@@ -1,40 +1,50 @@
-%% SEITH — Lifecycle Satu Order (money-path detail)
+%% SEITH — Lifecycle Satu Order (money-path detail) — v2
+%% REFLECTS Fase B (B1 inline keyboard, B3 push poller, callback transition)
 %% Invariant Tier-0: APPROVED/SUBMITTED/FILLED wajib approved_by;
 %% trader node tidak percaya status dari wire.
-stateDiagram-v2
-    [*] --> PENDING_APPROVAL: Decision dari AI membuat proposal
+%% Bot push proposal, owner approve via tombol, intake loop submit, nautilus verifikasi.
+[*] --> PENDING_APPROVAL: Decision AI membuat proposal (decision_store)
 
-    PENDING_APPROVAL --> APPROVED: 👤 /approve id (approved_by WAJIB)
-    PENDING_APPROVAL --> REJECTED: 👤 /reject id
-    PENDING_APPROVAL --> CANCELLED: /halt atau risk reject
+PENDING_APPROVAL --> PROPOSAL_PUSHED: _proposal_poller (45s) push fmt_proposal + tombol ke owner Telegram
 
-    APPROVED --> SUBMITTED: Intake loop + RiskManager lolos
-    APPROVED --> CANCELLED: RiskManager tolak atau submit gagal
+PROPOSAL_PUSHED --> APPROVED: 👤 klik ✅tombol approve (callback_query) — approved_by diisi
+PROPOSAL_PUSHED --> REJECTED: 👤 klik 🚫tombol reject (callback_query) — approved_by diisi
+PROPOSAL_PUSHED --> CANCELLED: /halt manual atau kill-switch / risk reject
 
-    SUBMITTED --> FILLED: venue match (sandbox / live)
-    SUBMITTED --> CANCELLED: cancel atau halt
+APPROVED --> SUBMITTED: intake loop + RiskManager lolos (submit_from_db)
+APPROVED --> CANCELLED: RiskManager tolak (risk.evaluate) atau submit gagal
 
-    FILLED --> [*]: PnL tercatat → dashboard + notifikasi
-    REJECTED --> [*]
-    CANCELLED --> [*]
+SUBMITTED --> FILLED: venue match (sandbox / live)
+SUBMITTED --> CANCELLED: cancel manual, halt, atau risk reject di verify
 
-    note right of APPROVED
-        Invariant keras di schema:
-        APPROVED / SUBMITTED / FILLED
-        wajib punya approved_by —
-        transisi ilegal = ValidationError
-    end note
+FILLED --> [*]: PnL tercatat → positions snapshot → dashboard + digest harian
 
-    note right of SUBMITTED
-        Trader node TIDAK percaya
-        field status dari wire —
-        verifikasi ulang ke
-        catatan milik sendiri
-        (seith-trading-safety)
-    end note
+REJECTED --> [*]
+CANCELLED --> [*]
 
-    note left of PENDING_APPROVAL
-        Kill switch aktif:
-        semua submission ditolak,
-        proposal terbuka dibatalkan
-    end note
+note right of APPROVED
+    Invariant keras di schema (OrderProposal):
+    APPROVED / SUBMITTED / FILLED wajib punya approved_by —
+    transisi ilegal = ValidationError (lihat seith_core.schemas).
+    Callback approve melalui _decide() → proposals.approve(rejected=False)
+    memaksa invariant sebelum commit DB.
+end note
+
+note right of SUBMITTED
+    Trader node TIDAK percaya status dari wire —
+    verifikasi ulang ke catatan sendiri via nautilus execution reports
+    (seith-trading-safety: status field di-rekonstruct, bukan dipercaya).
+end note
+
+note left of PENDING_APPROVAL
+    Kill switch aktif (ops_flags.is_halted):
+    semua submission ditolak, semua proposal terbuka dibatalkan.
+    Toggle /resume memakai _guard_owner + inline keyboard off/semi/auto.
+end note
+
+note right of PROPOSAL_PUSHED
+    Push berasal _proposal_poller — B3 proactive flow.
+    callback_data berisi proposal_id (valid <64 byte Telegram limit).
+    Race poller↔owner: SQLite busy_timeout(10s) menangani, callback
+    refetch proposal sebelum render untuk hindari stale state.
+end note

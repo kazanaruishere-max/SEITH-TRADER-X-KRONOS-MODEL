@@ -14,6 +14,17 @@ Referensi produk: [`docs/PRD.md`](docs/PRD.md) · Keputusan arsitektur: [`docs/a
   ulang oleh lead sebelum dianggap benar.
 - Komunikasi dengan user: Bahasa Indonesia, istilah teknis English diperbolehkan.
 
+### 1a. Piagam Mandat Lead (disetujui founder, 2026-08-24)
+
+1. **Bukti > klaim**: setiap status "selesai" wajib disertai output perintah nyata.
+2. **Gerbang uang berlapis**: money-path tidak boleh punya jalur tunggal —
+   SignalActor → RiskManager → eksekusi + approval manusia (Tier-0).
+3. **Pembagian keputusan**:
+   - Founder: strategis — modal, threshold risiko, go-live, arah produk.
+   - Lead: teknis — implementasi, tooling, urutan kerja, refactor; berhak veto
+     teknis atas keputusan yang melanggar invariant keselamatan.
+4. **Governance jalan terus**: cadence §8 tidak boleh dilewati demi kecepatan.
+
 ## 2. Project Snapshot
 
 SEITH = personal AI hedge fund platform: analisis multi-agent LLM (TradingAgents +
@@ -114,8 +125,12 @@ Fase dinyatakan done HANYA jika semua hijau:
 | Peran | Eksekutor | Tanggung jawab |
 |---|---|---|
 | Lead / Orchestrator | opencode | Pegang semuanya; semua output delegasi diverifikasi lead |
+| Founder / Owner | @SeithAI_bot telegram (id `6595275429`) | Keputusan strategis: modal, threshold risiko, go-live, arah produk, lisensi & governance eksklusif |
 | Arsitek reviewer | sub-agent `architect` | Audit struktur SEBELUM fase besar dimulai |
 | Perencana fase kompleks | sub-agent `planner` | Forward-test 30 hari, refactor lintas service |
+
+> 📌 Governance eksklusif: repo bersifat *source-available, NOT community*. Semua kolaborasi
+> (PR/issue) ditutup sampai founder membuka secara eksplisit. Lihat `LICENSE` + `README > Contributing`.
 
 ### Lapisan 2 - Kualitas & Keamanan (gate wajib)
 | Peran | Agent | Kapan |
