@@ -12,6 +12,7 @@ import argparse
 import logging
 import os
 import sys
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 from pydantic import TypeAdapter
@@ -78,22 +79,30 @@ def run_analysis(
     timeframe: Timeframe = Timeframe.H1,
     horizon_bars: int = 24,
     debate_rounds: int = 1,
+    on_progress: Callable[[str], None] | None = None,
 ) -> Decision:
     safe_ticker = _validate_ticker.validate_python(ticker)
     settings = get_settings()
     _ensure_llm_env()
 
+    def _tick(label: str) -> None:
+        if on_progress is not None:
+            on_progress(label)
+
     # 1. Data segar (incremental 2 hari cukup untuk konteks intraday)
     from seith_data.backfill import backfill
 
     logger.info("[%s] refresh data %s...", safe_ticker, timeframe.value)
+    _tick(f"⏳ {safe_ticker}: refresh data {timeframe.value}...")
     backfill(safe_ticker, timeframe.value, days=2)
+    _tick(f"✅ {safe_ticker}: data ok · ⏳ Kronos forecast...")
 
     # 2. Kronos forecast (GPU lokal)
     from seith_analysis.kronos_service import forecast
 
     logger.info("[%s] Kronos forecast x%d...", safe_ticker, horizon_bars)
     fc = forecast(safe_ticker, timeframe, horizon_bars)
+    _tick(f"✅ {safe_ticker}: forecast ok · ⏳ debat agent...")
 
     # 3. Debat multi-agent
     from tradingagents.default_config import DEFAULT_CONFIG
@@ -117,6 +126,7 @@ def run_analysis(
     final_state, pm_decision = ta.propagate(
         safe_ticker, trade_date, asset_type=asset_type_of(asset_class)
     )
+    _tick(f"✅ {safe_ticker}: debat ok · ⏳ susun keputusan...")
 
     # 4. Komposisi Decision terstandar
     rating = _extract_rating(pm_decision, final_state["final_trade_decision"])
