@@ -61,7 +61,9 @@ def _ensure_llm_env() -> None:
     """
     llm = get_settings().llm
     if llm.router_base_url:
-        # 9router menampung semua provider key; SEITH tidak menaruh key di sini.
+        # 9router menampung provider keys; key SEITH (bila ada) = auth internal gateway.
+        if llm.api_key:
+            os.environ["OPENAI_COMPATIBLE_API_KEY"] = llm.api_key.get_secret_value()
         return
     env_var = _PROVIDER_ENV_VAR.get(llm.provider)
     if env_var is None:

@@ -297,7 +297,8 @@ def _ask_llm(question: str, user_id: int) -> str:
         )
     messages.append({"role": "user", "content": question})
     headers: dict[str, str] = {"HTTP-Referer": "https://seith.ai", "X-Title": "SEITH"}
-    if llm.router_base_url is None:
+    if llm.api_key is not None:
+        # Key dipakai sesuai target endpoint: auth internal 9router ATAU provider langsung.
         headers["Authorization"] = f"Bearer {llm.api_key.get_secret_value()}"
     resp = requests.post(
         _resolve_chat_endpoint(llm),
