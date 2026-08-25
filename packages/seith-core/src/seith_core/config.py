@@ -22,7 +22,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal, get_args, get_origin
 
-from pydantic import BaseModel, ConfigDict, SecretStr, model_validator
+from pydantic import BaseModel, ConfigDict, HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from seith_core.schemas import RiskLimits
@@ -41,9 +41,16 @@ class LLMSettings(_FrozenModel):
 
     Model names harus valid di katalog provider masing-masing pada saat runtime;
     katalog berubah cepat - verifikasi via API sebelum mengganti.
+
+    Jika ``router_base_url`` diset (mis. 9router di ``http://localhost:20128/v1``),
+    semua provider API-key dikelola gateway — SEITH tidak menyimpan key provider
+    di .env, provider pakai ``openai_compatible`` (keyless). Ini rute tunggal
+    rekomendasi owner ("murni 9router").
+    Env: ``SEITH_LLM__ROUTER_BASE_URL``.
     """
 
     api_key: SecretStr | None = None
+    router_base_url: HttpUrl | None = None
     provider: str = "groq"
     quick_model: str = "openai/gpt-oss-20b"
     deep_model: str = "openai/gpt-oss-120b"

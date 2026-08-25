@@ -14,7 +14,7 @@ import threading
 from aiogram import Bot, Dispatcher, Router
 from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import CallbackQuery, Message
-from seith_core.config import get_settings
+from seith_core.config import LLMSettings, get_settings
 from seith_core.schemas import OrderProposalStatus as Status
 from seith_data.trading_mode import TradingMode
 
@@ -259,6 +259,14 @@ def _run_calendar_today() -> str:
     return "<b>Kalender hari ini:</b>\n" + "\n".join(lines)
 
 
+def _resolve_chat_endpoint(llm: LLMSettings) -> str:
+    """Endpoint akhir LLM: 9router (keyless) dulu, fallback OpenRouter langsung."""
+    base = str(llm.router_base_url) if llm.router_base_url else None
+    if base:
+        return base.rstrip("/") + "/chat/completions"
+    return "https://openrouter.ai/api/v1/chat/completions"
+
+
 def _ask_llm(question: str, user_id: int) -> str:
     """Panggil LLM dengan konteks hidup + memori percakapan; tanpa secret di prompt."""
     import requests
@@ -267,8 +275,12 @@ def _ask_llm(question: str, user_id: int) -> str:
     from seith_api.digest import build_daily_digest, collect_digest_inputs
 
     settings = get_settings()
-    if settings.llm.api_key is None:
-        raise RuntimeError("LLM belum terkonfigurasi (SEITH_LLM__API_KEY)")
+    llm = settings.llm
+    if llm.router_base_url is None and llm.api_key is None:
+        raise RuntimeError(
+            "LLM belum terkonfigurasi — set SEITH_LLM__ROUTER_BASE_URL (9router) "
+            "atau SEITH_LLM__API_KEY"
+        )
     live_context = build_ask_context(settings)
     history = chat_memory.recall_context(user_id)
     system = (
@@ -284,11 +296,14 @@ def _ask_llm(question: str, user_id: int) -> str:
             {"role": "system", "content": f"[RIWAYAT PERCAKAPAN]\n{history}"}
         )
     messages.append({"role": "user", "content": question})
+    headers: dict[str, str] = {"HTTP-Referer": "https://seith.ai", "X-Title": "SEITH"}
+    if llm.router_base_url is None:
+        headers["Authorization"] = f"Bearer {llm.api_key.get_secret_value()}"
     resp = requests.post(
-        "https://openrouter.ai/api/v1/chat/completions",
-        headers={"Authorization": f"Bearer {settings.llm.api_key.get_secret_value()}"},
+        _resolve_chat_endpoint(llm),
+        headers=headers,
         json={
-            "model": settings.llm.quick_model,
+            "model": llm.quick_model,
             "messages": messages,
             "max_tokens": 700,
         },

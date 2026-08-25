@@ -16,7 +16,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 
 from pydantic import TypeAdapter
-from seith_core.config import get_settings
+from seith_core.config import LLMSettings, get_settings
 from seith_core.schemas import (
     AgentReport,
     AssetClass,
@@ -54,8 +54,15 @@ _PROVIDER_ENV_VAR = {
 
 
 def _ensure_llm_env() -> None:
-    """Boundary konstruksi client: satu-satunya tempat secret value dipakai."""
+    """Boundary konstruksi client: satu-satunya tempat secret value dipakai.
+
+    Jika ``router_base_url`` diset (9router), pakai provider ``openai_compatible``
+    (keyless) — semua provider API-key dikelola gateway, bukan .env SEITH.
+    """
     llm = get_settings().llm
+    if llm.router_base_url:
+        # 9router menampung semua provider key; SEITH tidak menaruh key di sini.
+        return
     env_var = _PROVIDER_ENV_VAR.get(llm.provider)
     if env_var is None:
         known = ", ".join(sorted(_PROVIDER_ENV_VAR))
@@ -63,6 +70,33 @@ def _ensure_llm_env() -> None:
     if not llm.api_key:
         raise RuntimeError("SEITH_LLM__API_KEY belum dikonfigurasi")
     os.environ[env_var] = llm.api_key.get_secret_value()
+
+
+def build_ta_config(llm: LLMSettings | None = None, debate_rounds: int = 1) -> dict:
+    """Bangun config TradingAgents dari SEITH LLM settings (pure — tidak set env).
+
+    Router (9router) dipilih bila ``router_base_url`` ada: provider menjadi
+    ``openai_compatible`` (keyless) + ``backend_url``=router endpoint.
+    """
+    from tradingagents.default_config import DEFAULT_CONFIG
+
+    llm = llm or get_settings().llm
+    cfg = DEFAULT_CONFIG.copy()
+    if llm.router_base_url:
+        cfg.update(
+            llm_provider="openai_compatible",
+            backend_url=str(llm.router_base_url),
+        )
+    else:
+        cfg.update(llm_provider=llm.provider)
+    cfg.update(
+        deep_think_llm=llm.deep_model,
+        quick_think_llm=llm.quick_model,
+        max_debate_rounds=debate_rounds,
+        max_risk_discuss_rounds=1,
+        openai_reasoning_effort="low" if "gpt-oss" in llm.quick_model else None,
+    )
+    return cfg
 
 
 def _extract_rating(decision_obj: object, final_trade_decision: str) -> str:
@@ -104,20 +138,10 @@ def run_analysis(
     fc = forecast(safe_ticker, timeframe, horizon_bars)
     _tick(f"✅ {safe_ticker}: forecast ok · ⏳ debat agent...")
 
-    # 3. Debat multi-agent
-    from tradingagents.default_config import DEFAULT_CONFIG
+    # 3. Debat multi-agent (LLM optional: bisa lewat 9router keyless, atau per-key)
     from tradingagents.graph.trading_graph import TradingAgentsGraph
 
-    cfg = DEFAULT_CONFIG.copy()
-    llm = settings.llm
-    cfg.update(
-        llm_provider=llm.provider,
-        deep_think_llm=llm.deep_model,
-        quick_think_llm=llm.quick_model,
-        max_debate_rounds=debate_rounds,
-        max_risk_discuss_rounds=1,
-        openai_reasoning_effort="low" if "gpt-oss" in llm.quick_model else None,
-    )
+    cfg = build_ta_config(llm=settings.llm, debate_rounds=debate_rounds)
     asset_class = fc.asset_class
     trade_date = datetime.now(UTC).date().isoformat()
 
