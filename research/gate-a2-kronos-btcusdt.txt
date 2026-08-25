@@ -1,0 +1,294 @@
+load NeoQuasar/Kronos-base pada device=cuda
+HTTP Request: HEAD https://huggingface.co/NeoQuasar/Kronos-Tokenizer-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NeoQuasar/Kronos-Tokenizer-base/0e0117387f39004a9016484a186a908917e22426/config.json "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/NeoQuasar/Kronos-Tokenizer-base/resolve/main/model.safetensors "HTTP/1.1 302 Found"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+HTTP Request: HEAD https://huggingface.co/NeoQuasar/Kronos-base/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/NeoQuasar/Kronos-base/2b554741eca47781b64468546e77fef3e85130e6/config.json "HTTP/1.1 200 OK"
+HTTP Request: HEAD https://huggingface.co/NeoQuasar/Kronos-base/resolve/main/model.safetensors "HTTP/1.1 302 Found"
+[BTCUSDT] RankIC kronos=0.224 persist=-0.058 hit=0.62/0.49 (n=45)
+{
+  "ticker": "BTCUSDT",
+  "timeframe": "1h",
+  "horizon_bars": 24,
+  "lookback": 400,
+  "n_windows": 45,
+  "ic_kronos": 0.2235836627140975,
+  "ic_persistence": -0.057575757575757565,
+  "hit_kronos": 0.6222222222222222,
+  "hit_persistence": 0.4888888888888889,
+  "mean_abs_pred": 0.0208504,
+  "detail": [
+    {
+      "cutoff": "2026-06-11 00:00:00+00:00",
+      "pred_kronos": 0.052385,
+      "pred_persistence": -0.0017951280264121294,
+      "realized": 0.02971591276774732
+    },
+    {
+      "cutoff": "2026-06-12 16:00:00+00:00",
+      "pred_kronos": 0.01025,
+      "pred_persistence": 0.022370968218725862,
+      "realized": 0.000729731013864976
+    },
+    {
+      "cutoff": "2026-06-14 08:00:00+00:00",
+      "pred_kronos": -0.002772,
+      "pred_persistence": 0.010192301664420311,
+      "realized": 0.018705377734040907
+    },
+    {
+      "cutoff": "2026-06-16 00:00:00+00:00",
+      "pred_kronos": -0.013459,
+      "pred_persistence": 0.009508580365797048,
+      "realized": -0.008301886792452806
+    },
+    {
+      "cutoff": "2026-06-17 16:00:00+00:00",
+      "pred_kronos": -0.004332,
+      "pred_persistence": 0.0016127298139982926,
+      "realized": -0.04822230980995412
+    },
+    {
+      "cutoff": "2026-06-19 08:00:00+00:00",
+      "pred_kronos": 0.024174,
+      "pred_persistence": -0.027887146443660193,
+      "realized": 0.013002046674660983
+    },
+    {
+      "cutoff": "2026-06-21 00:00:00+00:00",
+      "pred_kronos": -0.010104,
+      "pred_persistence": 0.012025655276931335,
+      "realized": -0.006190157713005795
+    },
+    {
+      "cutoff": "2026-06-22 16:00:00+00:00",
+      "pred_kronos": -0.012812,
+      "pred_persistence": 0.008955604080797208,
+      "realized": -0.033402003746304976
+    },
+    {
+      "cutoff": "2026-06-24 08:00:00+00:00",
+      "pred_kronos": 0.009053,
+      "pred_persistence": 0.006636265610275638,
+      "realized": -0.01731926751592361
+    },
+    {
+      "cutoff": "2026-06-26 00:00:00+00:00",
+      "pred_kronos": 0.059336,
+      "pred_persistence": -0.019149625197264708,
+      "realized": 0.0065694505966353844
+    },
+    {
+      "cutoff": "2026-06-27 16:00:00+00:00",
+      "pred_kronos": 0.024847,
+      "pred_persistence": 0.012761786590164359,
+      "realized": -0.01837538126157423
+    },
+    {
+      "cutoff": "2026-06-29 08:00:00+00:00",
+      "pred_kronos": 0.047609,
+      "pred_persistence": -0.008779194964386283,
+      "realized": -0.00882486631016044
+    },
+    {
+      "cutoff": "2026-07-01 00:00:00+00:00",
+      "pred_kronos": 0.055936,
+      "pred_persistence": -0.021090440674748412,
+      "realized": 0.020242590822179718
+    },
+    {
+      "cutoff": "2026-07-02 16:00:00+00:00",
+      "pred_kronos": -0.002101,
+      "pred_persistence": 0.0294115487316422,
+      "realized": 0.0068491240766805905
+    },
+    {
+      "cutoff": "2026-07-04 08:00:00+00:00",
+      "pred_kronos": -0.011491,
+      "pred_persistence": 0.015747272018706182,
+      "realized": 0.005774551114257287
+    },
+    {
+      "cutoff": "2026-07-06 00:00:00+00:00",
+      "pred_kronos": -0.031587,
+      "pred_persistence": 0.012235024874073908,
+      "realized": 0.006932029568085918
+    },
+    {
+      "cutoff": "2026-07-07 16:00:00+00:00",
+      "pred_kronos": -0.023434,
+      "pred_persistence": 0.003942603401744682,
+      "realized": -0.029230140941530425
+    },
+    {
+      "cutoff": "2026-07-09 08:00:00+00:00",
+      "pred_kronos": -0.006211,
+      "pred_persistence": 0.01427464383127841,
+      "realized": 0.021339938143493997
+    },
+    {
+      "cutoff": "2026-07-11 00:00:00+00:00",
+      "pred_kronos": -0.030786,
+      "pred_persistence": 0.016003915458916884,
+      "realized": -0.004608726841744071
+    },
+    {
+      "cutoff": "2026-07-12 16:00:00+00:00",
+      "pred_kronos": -0.017911,
+      "pred_persistence": -3.599251542663051e-05,
+      "realized": -0.029631787988662728
+    },
+    {
+      "cutoff": "2026-07-14 08:00:00+00:00",
+      "pred_kronos": 0.000179,
+      "pred_persistence": -0.007801671239738295,
+      "realized": 0.03275448724643759
+    },
+    {
+      "cutoff": "2026-07-16 00:00:00+00:00",
+      "pred_kronos": -0.018802,
+      "pred_persistence": -0.0037101667299657137,
+      "realized": -0.010808702517509317
+    },
+    {
+      "cutoff": "2026-07-17 16:00:00+00:00",
+      "pred_kronos": 0.001156,
+      "pred_persistence": -0.013801873332919823,
+      "realized": 0.011156241154826052
+    },
+    {
+      "cutoff": "2026-07-19 08:00:00+00:00",
+      "pred_kronos": -0.015693,
+      "pred_persistence": 0.010959595825454471,
+      "realized": -0.010161111178937698
+    },
+    {
+      "cutoff": "2026-07-21 00:00:00+00:00",
+      "pred_kronos": -0.027864,
+      "pred_persistence": 0.01571045192663978,
+      "realized": 0.016059050747460724
+    },
+    {
+      "cutoff": "2026-07-22 16:00:00+00:00",
+      "pred_kronos": -0.026232,
+      "pred_persistence": -0.004703795391813426,
+      "realized": -0.022228476614704062
+    },
+    {
+      "cutoff": "2026-07-24 08:00:00+00:00",
+      "pred_kronos": -0.00638,
+      "pred_persistence": -0.005040452211539925,
+      "realized": -0.02183878087990332
+    },
+    {
+      "cutoff": "2026-07-26 00:00:00+00:00",
+      "pred_kronos": -0.010092,
+      "pred_persistence": 0.006763783092602393,
+      "realized": 0.009688252389392193
+    },
+    {
+      "cutoff": "2026-07-27 16:00:00+00:00",
+      "pred_kronos": -0.000448,
+      "pred_persistence": 0.0025388446318226343,
+      "realized": -0.013178420709747951
+    },
+    {
+      "cutoff": "2026-07-29 08:00:00+00:00",
+      "pred_kronos": -0.006759,
+      "pred_persistence": 0.015596089303034244,
+      "realized": -0.001696748901809042
+    },
+    {
+      "cutoff": "2026-07-31 00:00:00+00:00",
+      "pred_kronos": -0.004841,
+      "pred_persistence": 0.016141961469915644,
+      "realized": -0.02760760887886904
+    },
+    {
+      "cutoff": "2026-08-01 16:00:00+00:00",
+      "pred_kronos": 0.027929,
+      "pred_persistence": 0.0009772409738817434,
+      "realized": 0.003941377022172343
+    },
+    {
+      "cutoff": "2026-08-03 08:00:00+00:00",
+      "pred_kronos": 0.026832,
+      "pred_persistence": -0.010325190734118861,
+      "realized": 0.01674791938153075
+    },
+    {
+      "cutoff": "2026-08-05 00:00:00+00:00",
+      "pred_kronos": -0.001749,
+      "pred_persistence": 0.00987989802719258,
+      "realized": 0.01026739388635356
+    },
+    {
+      "cutoff": "2026-08-06 16:00:00+00:00",
+      "pred_kronos": -1.9e-05,
+      "pred_persistence": 0.0014846434512763018,
+      "realized": 0.0008649125768109833
+    },
+    {
+      "cutoff": "2026-08-08 08:00:00+00:00",
+      "pred_kronos": -0.01001,
+      "pred_persistence": 0.0060970588235294,
+      "realized": -0.00261116933027683
+    },
+    {
+      "cutoff": "2026-08-10 00:00:00+00:00",
+      "pred_kronos": -0.007364,
+      "pred_persistence": -8.68044199455742e-05,
+      "realized": -0.014284106901227278
+    },
+    {
+      "cutoff": "2026-08-11 16:00:00+00:00",
+      "pred_kronos": 0.014333,
+      "pred_persistence": -0.006135077807327138,
+      "realized": -0.0003222983033757121
+    },
+    {
+      "cutoff": "2026-08-13 08:00:00+00:00",
+      "pred_kronos": 0.003213,
+      "pred_persistence": -0.00044110081457870987,
+      "realized": -0.012965838022293785
+    },
+    {
+      "cutoff": "2026-08-15 00:00:00+00:00",
+      "pred_kronos": 0.016523,
+      "pred_persistence": -0.00820834274320148,
+      "realized": 0.0010463364893744664
+    },
+    {
+      "cutoff": "2026-08-16 16:00:00+00:00",
+      "pred_kronos": 0.006146,
+      "pred_persistence": 0.0025893617456274054,
+      "realized": 0.013527503394324514
+    },
+    {
+      "cutoff": "2026-08-18 08:00:00+00:00",
+      "pred_kronos": -0.008394,
+      "pred_persistence": 0.014439379471777203,
+      "realized": 0.0018341726284145654
+    },
+    {
+      "cutoff": "2026-08-20 00:00:00+00:00",
+      "pred_kronos": -0.071392,
+      "pred_persistence": 0.07647934499441766,
+      "realized": 0.0617692307692308
+    },
+    {
+      "cutoff": "2026-08-21 16:00:00+00:00",
+      "pred_kronos": -0.106933,
+      "pred_persistence": 0.06382539679270804,
+      "realized": -0.0025552999825387834
+    },
+    {
+      "cutoff": "2026-08-23 08:00:00+00:00",
+      "pred_kronos": -0.068395,
+      "pred_persistence": -0.009377734001376758,
+      "realized": 0.007255921928173148
+    }
+  ]
+}
