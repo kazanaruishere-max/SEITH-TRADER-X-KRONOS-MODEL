@@ -76,11 +76,13 @@ def forecast(
     horizon_bars: int,
     lookback: int = 400,
     sample_count: int = 8,
+    df: pd.DataFrame | None = None,
 ) -> ForecastResult:
     safe_ticker = _validate_ticker.validate_python(ticker)
     if horizon_bars <= 0:
         raise ValueError("horizon_bars wajib positif (fail-fast sebelum inference GPU)")
-    df = load_ohlcv(safe_ticker, timeframe)
+    if df is None:
+        df = load_ohlcv(safe_ticker, timeframe)
     if df is None or len(df) < lookback:
         raise RuntimeError(
             f"data {safe_ticker} {timeframe} kurang ({0 if df is None else len(df)} bar);"
