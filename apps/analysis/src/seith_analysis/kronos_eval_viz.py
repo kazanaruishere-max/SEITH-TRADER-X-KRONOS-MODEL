@@ -143,7 +143,8 @@ def render_dashboard(
     lim = max(abs(sample["realized"]).max(), abs(sample["pred_kronos"]).max()) * 1.05
     axes[0][1].plot([-lim, lim], [-lim, lim], color="gray", lw=0.6, ls="--")
     axes[0][1].set_title("Prediksi vs realized (Kronos)")
-    axes[0][1].set_xlabel("pred"); axes[0][1].set_ylabel("realized")
+    axes[0][1].set_xlabel("pred")
+    axes[0][1].set_ylabel("realized")
 
     ric = rolling_ic(df, ic_window)
     axes[1][0].plot(ric.index, ric["kronos"], label="Kronos", lw=1.4)
