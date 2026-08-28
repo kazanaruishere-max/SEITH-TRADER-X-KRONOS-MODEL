@@ -45,6 +45,17 @@ logs/
 .coverage
 htmlcov/
 
+# Test artifacts (defense-in-depth: tests/ may generate sensitive runtime files)
+# Matches any tests/ directory at any depth: apps/*/tests/, packages/*/tests/, etc.
+**/tests/.env*
+**/tests/**/credentials*.json
+**/tests/**/secrets*.json
+**/tests/**/account_state.json
+**/tests/**/positions.json
+**/tests/**/trade_log.json
+**/tests/**/trade_history.json
+**/tests/**/test_output*.jsonl
+
 # Handoff docs
 .handoff/
 

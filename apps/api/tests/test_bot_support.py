@@ -14,6 +14,11 @@ from seith_core.schemas import (
 from seith_api.auth import is_authorized
 from seith_api.format import fmt_broadcast, fmt_decision, fmt_pending, fmt_proposal
 
+# Fake fixture owner id — NOT a real Telegram account. Deliberately kept out of
+# version control so the real owner id is never embedded in tests. See
+# docs/SENSITIVE_CATALOG.md. Membership logic (is_authorized) is value-agnostic.
+TEST_USER_ID = 12345678
+
 
 @pytest.fixture()
 def settings():
@@ -41,9 +46,9 @@ class TestAuth:
         object.__setattr__(
             s,
             "telegram",
-            type(s.telegram)(bot_token=None, allowed_user_ids=(6595275429,)),
+            type(s.telegram)(bot_token=None, allowed_user_ids=(TEST_USER_ID,)),
         )
-        assert is_authorized(6595275429, s) is True
+        assert is_authorized(TEST_USER_ID, s) is True
 
     def test_fail_closed_empty_allowlist(self):
         s = AppSettings(_env_file=None)  # allowlist default kosong

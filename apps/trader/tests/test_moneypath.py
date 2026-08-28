@@ -15,6 +15,10 @@ from seith_trader import proposals, risk
 from seith_trader.executor import DryRunSubmitter
 from seith_trader.intake import halt_all_pending, process_pending
 
+# Fake fixture approver — NOT a real Telegram id. See docs/SENSITIVE_CATALOG.md.
+TEST_USER_ID = 12345678
+TEST_APPROVER = f"telegram:{TEST_USER_ID}"
+
 
 @pytest.fixture()
 def settings(tmp_path):
@@ -119,10 +123,10 @@ class TestRiskRules:
 class TestProposalStateMachine:
     def test_legal_flow_pending_approved_submitted_filled(self, settings):
         p = make_proposal(settings)
-        p2 = proposals.approve(p.proposal_id, approved_by="telegram:6595275429", settings=settings)
-        assert p2.status is Status.APPROVED and p2.approved_by == "telegram:6595275429"
+        p2 = proposals.approve(p.proposal_id, approved_by=TEST_APPROVER, settings=settings)
+        assert p2.status is Status.APPROVED and p2.approved_by == TEST_APPROVER
         p3 = proposals.transition(
-            p2.proposal_id, Status.SUBMITTED, approved_by="telegram:6595275429", settings=settings
+            p2.proposal_id, Status.SUBMITTED, approved_by=TEST_APPROVER, settings=settings
         )
         p4 = proposals.transition(p3.proposal_id, Status.FILLED, settings=settings)
         assert p4.status is Status.FILLED
@@ -160,7 +164,7 @@ class TestIntakeFlow:
 
     def test_full_happy_path(self, settings):
         p = make_proposal(settings)
-        proposals.approve(p.proposal_id, approved_by="telegram:6595275429", settings=settings)
+        proposals.approve(p.proposal_id, approved_by=TEST_APPROVER, settings=settings)
         submitter = DryRunSubmitter()
         results = process_pending(self._mark, healthy_portfolio(), submitter, settings=settings)
         assert len(results) == 1 and results[0].action == "submitted"
@@ -170,7 +174,7 @@ class TestIntakeFlow:
 
     def test_risk_rejection_cancels_with_reason(self, settings):
         p = make_proposal(settings)
-        proposals.approve(p.proposal_id, approved_by="telegram:6595275429", settings=settings)
+        proposals.approve(p.proposal_id, approved_by=TEST_APPROVER, settings=settings)
         risk.set_halt(True, settings)
         try:
             results = process_pending(
@@ -183,7 +187,7 @@ class TestIntakeFlow:
 
     def test_submit_failure_cancels(self, settings):
         p = make_proposal(settings)
-        proposals.approve(p.proposal_id, approved_by="telegram:6595275429", settings=settings)
+        proposals.approve(p.proposal_id, approved_by=TEST_APPROVER, settings=settings)
         submitter = DryRunSubmitter(fail_next=True)
         results = process_pending(self._mark, healthy_portfolio(), submitter, settings=settings)
         assert results[0].action == "error"

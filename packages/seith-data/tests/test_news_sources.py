@@ -31,6 +31,10 @@ def settings(tmp_path):
 
 CCDATA_PAYLOAD = {
     "Data": [
+        # NOTE: PUBLISHED_ON values are epoch seconds (UTC). They are 10-digit ints
+        # but are NOT Telegram user ids — they are test fixtures representing year
+        # 2026 release timestamps. Some audit tooling flags any 9-10 digit number
+        # as a "Potential Telegram ID"; these are intentional false positives.
         {
             "ID": 5550001,
             "TITLE": "Bitcoin ETF inflows accelerate",

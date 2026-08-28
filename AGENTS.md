@@ -125,7 +125,7 @@ Fase dinyatakan done HANYA jika semua hijau:
 | Peran | Eksekutor | Tanggung jawab |
 |---|---|---|
 | Lead / Orchestrator | opencode | Pegang semuanya; semua output delegasi diverifikasi lead |
-| Founder / Owner | @SeithAI_bot telegram (id `6595275429`) | Keputusan strategis: modal, threshold risiko, go-live, arah produk, lisensi & governance eksklusif |
+| Founder / Owner | @SeithAI_bot telegram (id `<TELEGRAM_ID_REDACTED>`) | Keputusan strategis: modal, threshold risiko, go-live, arah produk, lisensi & governance eksklusif |
 | Arsitek reviewer | sub-agent `architect` | Audit struktur SEBELUM fase besar dimulai |
 | Perencana fase kompleks | sub-agent `planner` | Forward-test 30 hari, refactor lintas service |
 
