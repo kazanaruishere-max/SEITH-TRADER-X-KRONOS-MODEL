@@ -193,7 +193,26 @@ Panel empat per pair: (1) PnL kumulatif arah-sinyal, (2) prediksi-vs-realized sc
 
 ---
 
-## Testing
+## 📦 Asal-usul & Provenance (Vendor / Dependency)
+
+SEITH tidak mem-build komponen ML/algorithm dari nol — empat proyek upstream
+ter-integrasi (dua di-vendor sebagai fork, dua sebagai dependency pip exact-pin):
+
+| Repo upstream | Peran di SEITH | Pin / Versi | Lisensi |
+|---|---|---|---|
+| [`polakowo/vectorbt`](https://github.com/polakowo/vectorbt) | Backtesting vectorbt-style (walk-forward, anti-lookahead) + tearsheet | `vectorbt==1.1.0` (pip) | MIT |
+| [`nautechsystems/nautilus_trader`](https://github.com/nautechsystems/nautilus_trader) | Execution engine production-grade (event-driven, semantic parity sim vs live) | `nautilus_trader==1.231.0` (pip, Nautech index) | LGPL-3.0 |
+| [`TauricResearch/TradingAgents`](https://github.com/TauricResearch/TradingAgents) | Multi-agent LLM trading framework (analyst → debater → risk → PM → trader) | fork `vendor/TradingAgents` @ `a33fd4c` (2026-08-23) | Apache-2.0 |
+| [`shiyu-coder/Kronos`](https://github.com/shiyu-coder/Kronos) | Foundation model prediksi K-line (OHLCV tokenizer + autoregressive decoder) | fork `vendor/Kronos` @ `67b630e` (2026-08-23) | MIT |
+
+**Kebijakan pinning:** lihat [`docs/adr/0002`](docs/adr/0002-contract-and-ops-policies.md) §2
+(vendor) + money-path exact-pin (`nautilus_trader==1.231.0`, `vectorbt==1.1.0`).
+Upgrade = prosedur manual review, bukan `git pull vendor`. Semua patch customisasi
+tercatat di repo ini (bukan upstream).
+
+Catatan: `9router` (`localhost:20128`) — router LLM pribadi, **bukan** salah satu
+upstream di atas. Ini adalah komponen closed-source milik owner, berjalan sebagai
+proses Tier-0 yang **dilarang dimatikan/direstart** (lihat invariant di atas).
 
 - **Satuan**: `uv run pytest` dari tiap app dir (lint via `uvx ruff check .`).
   Semua critical-path tests hijau: api (15) + trader (29) + seith-data (66) = **110 total**.

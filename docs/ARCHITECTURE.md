@@ -149,7 +149,22 @@ Semua model domain didefinisikan di `packages/seith-core/src/seith_core/schemas.
 
 ---
 
-## 8. Referensi
+## 8. 📦 Asal-usul & Provenance (Vendor / Dependency)
+
+SEITH mengintegrasikan empat proyek upstream (dua di-vendor sebagai fork, dua
+sebagai dependency pip exact-pin). Upgrade vendor = prosedur manual per ADR-0002 §2.
+
+| Repo upstream | Peran | Pin | Lisensi |
+|---|---|---|---|
+| [`polakowo/vectorbt`](https://github.com/polakowo/vectorbt) | Backtesting walk-forward + tearsheet | `vectorbt==1.1.0` | MIT |
+| [`nautechsystems/nautilus_trader`](https://github.com/nautechsystems/nautilus_trader) | Execution engine (event-driven, sim parity) | `nautilus_trader==1.231.0` | LGPL-3.0 |
+| [`TauricResearch/TradingAgents`](https://github.com/TauricResearch/TradingAgents) | Multi-agent LLM framework | fork @ `a33fd4c` | Apache-2.0 |
+| [`shiyu-coder/Kronos`](https://github.com/shiyu-coder/Kronos) | Foundation model K-line forecast | fork @ `67b630e` | MIT |
+
+Lihat juga [`README.md`](README.md) §📦 Asal-usul untuk ringkasan singkat +
+[`docs/kronos-notes.md`](kronos-notes.md) untuk detail model Kronos dan sampling.
+
+## 9. Referensi
 
 - `docs/PRD.md` — Product Requirements Document
 - `docs/adr/0001-architecture-decisions.md`
