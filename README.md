@@ -48,6 +48,29 @@ Gotcha lihat `AGENTS.md` §5 (uv multi-env, never sync from root, reinstall-pack
 
 - **Satuan**: `uv run pytest` dari tiap app dir (lint via `uvx ruff check .`).
 - **TB#1 (end-of-phase e2e)**: `/analyze BTCUSDT` penuh + tes interaksi bot dari HP.
+
+## Gate-A#2 — Hasil Backtest Kronos (h=24 bar, 1H)
+
+Evaluasi formal model prediksi harga Kronos (AAAI 2026) melawan data 1H Binance,
+walk-forward anti-leak (`n=590` per pair, horizon 24 bar). Threshold GO sudah
+di-pre-register: RankIC ≥ +0.10 · hit-rate ≥ 55%.
+
+| Pair | RankIC Kronos | RankIC persist | Hit Kronos | Hit persist | Verdict |
+|---|---|---|---|---|---|
+| BTCUSDT | +0.022 | −0.013 | 48.98% | 51.53% | **tanpa edge** |
+| ETHUSDT | +0.088 (p<0.05) | −0.061 | 55.0% | 47.3% | **edge tipis nyata** |
+
+Visual (tearsheet, 4 panel — PnL kumulatif, pred-vs-realized scatter, rolling IC,
+hit-rate bulanan):
+
+![BTCUSDT tearsheet](research/gate-a2-charts-BTCUSDT.png)
+![ETHUSDT tearsheet](research/gate-a2-charts-ETHUSDT.png)
+
+> Lihat notebook `research/gate_a2_analysis.ipynb` + artefak mentah
+> `research/gate-a2-formal-{BTCUSDT,ETHUSDT}-h24.txt` untuk detail run.
+> Verdict formal: penuhi threshold ETHUSDT (edge tipis), belum memuaskan BTCUSDT;
+> keputusan produksi tetap menunggu pre-register full 5-pair.
+
   Butuh kuota OpenRouter (reset harian 07:00 WIB) + GPU lokal. Lihat `.handoff/TB1-test-plan.md`.
 
 ## Contributes / Lisensi
